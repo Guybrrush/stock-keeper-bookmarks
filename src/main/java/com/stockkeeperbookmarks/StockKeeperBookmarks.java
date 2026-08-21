@@ -1,4 +1,4 @@
-package com.stockaddressbook;
+package com.stockkeeperbookmarks;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.ModContainer;
@@ -11,12 +11,12 @@ import net.neoforged.fml.config.ModConfig;
  * to fire an order at the wrong destination. This replaces that flow with a column of
  * one-click destination buttons and stops the field from inheriting a stale value.
  */
-@Mod(value = StockAddressBook.ID, dist = Dist.CLIENT)
-public class StockAddressBook {
+@Mod(value = StockKeeperBookmarks.ID, dist = Dist.CLIENT)
+public class StockKeeperBookmarks {
 
-	public static final String ID = "stockaddressbook";
+	public static final String ID = "stockkeeperbookmarks";
 
-	public StockAddressBook(ModContainer container) {
+	public StockKeeperBookmarks(ModContainer container) {
 		container.registerConfig(ModConfig.Type.CLIENT, AddressBookConfig.SPEC);
 	}
 }

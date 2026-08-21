@@ -39,7 +39,7 @@ anything but `StockKeeperRequestScreen`.
   the same as in dev, so mixin targets are written against those names directly.
 - `neoforge.mods.toml` is **generated** from `src/main/templates/META-INF/` by
   the `generateModMetadata` task — edit the template, not `build/`.
-- Local testing is a copy of `build/libs/stockaddressbook-0.1.0.jar` into a
+- Local testing is a copy of `build/libs/stockkeeperbookmarks-0.1.0.jar` into a
   Modrinth App instance's `mods` folder. **Verify the copy landed**: if the game
   is running, Windows refuses the overwrite and `cp` still reports success, so
   compare hashes rather than trusting the exit code.
@@ -117,7 +117,7 @@ runs from the `gui.stock_keeper.send` constant to the
 block entity, not a stub — identifying which keeper you are standing at is a
 field read, no packet needed.
 
-Storage is `config/stockaddressbook-bookmarks.json`, keyed
+Storage is `config/stockkeeperbookmarks-bookmarks.json`, keyed
 `worldScope | dimension | x,y,z`. The world scope (`server/<ip>` or
 `local/<level name>`) matters: without it, keepers at the same coordinates in two
 different saves would share bookmarks.

@@ -1,4 +1,4 @@
-package com.stockaddressbook;
+package com.stockkeeperbookmarks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +22,7 @@ public class AddressBookConfig {
 		ADDRESSES = builder
 			.comment("Starting destinations for a Stock Keeper you have not customised yet.",
 				"Bookmarks are per Stock Keeper: the first edit to one copies this list into",
-				"config/stockaddressbook-bookmarks.json under that keeper's own entry, and from",
+				"config/stockkeeperbookmarks-bookmarks.json under that keeper's own entry, and from",
 				"then on that keeper is edited there, not here.",
 				"Editable in-game: type an address in the field and click the + button to pin it,",
 				"right-click a button to remove it, drag buttons to reorder them.")

@@ -1,4 +1,4 @@
-package com.stockaddressbook;
+package com.stockkeeperbookmarks;
 
 import java.io.Reader;
 import java.io.Writer;
@@ -52,7 +52,7 @@ public final class BookmarkStore {
 	}
 
 	private static Path file() {
-		return FMLPaths.CONFIGDIR.get().resolve("stockaddressbook-bookmarks.json");
+		return FMLPaths.CONFIGDIR.get().resolve("stockkeeperbookmarks-bookmarks.json");
 	}
 
 	/**

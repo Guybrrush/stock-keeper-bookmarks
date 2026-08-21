@@ -1,4 +1,4 @@
-package com.stockaddressbook.client;
+package com.stockkeeperbookmarks.client;
 
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;

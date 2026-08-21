@@ -48,7 +48,7 @@ way to use it — the mod never blocks a send.
 
 ## Config
 
-`config/stockaddressbook-client.toml`
+`config/stockkeeperbookmarks-client.toml`
 
 | Key | Default | Meaning |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ way to use it — the mod never blocks a send.
 | `clearAddressOnOpen` | `true` | The safeguard. `false` restores Create's sticky behaviour |
 | `buttonWidth` | `72` | Bookmark width in pixels |
 
-Per-keeper bookmarks live in `config/stockaddressbook-bookmarks.json`, keyed by world,
+Per-keeper bookmarks live in `config/stockkeeperbookmarks-bookmarks.json`, keyed by world,
 dimension and block position. A keeper with no entry shows the `addresses` list above;
 the first pin, removal or reorder promotes it to its own entry.
 
