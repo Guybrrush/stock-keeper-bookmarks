@@ -802,9 +802,12 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		lines.add(Component.translatable(AddressBookConfig.COLLAPSED.get()
 			? "stockkeeperbookmarks.tooltip.show"
 			: "stockkeeperbookmarks.tooltip.hide").getVisualOrderText());
-		lines.add(Component.translatable(AddressBookConfig.AUTO_FOCUS_SEARCH.get()
-			? "stockkeeperbookmarks.tooltip.autofocus.disable"
-			: "stockkeeperbookmarks.tooltip.autofocus.enable").getVisualOrderText());
+		// "toggle" rather than "enable/disable": it names no direction, so the ON/OFF beside it
+		// reads unambiguously as the current state rather than as what the click will do.
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.autofocus",
+			Component.translatable(AddressBookConfig.AUTO_FOCUS_SEARCH.get()
+				? "stockkeeperbookmarks.state.on"
+				: "stockkeeperbookmarks.state.off")).getVisualOrderText());
 		return lines;
 	}
 

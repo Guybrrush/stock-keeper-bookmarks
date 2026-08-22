@@ -23,6 +23,8 @@
   "stockkeeperbookmarks.tooltip.mode": "§8Click (or Shift+click) here to change the display — §f%s",
   "stockkeeperbookmarks.tooltip.hide": "§8Right-click here to hide the Bookmarks",
   "stockkeeperbookmarks.tooltip.show": "§8Right-click here to show the Bookmarks",
-  "stockkeeperbookmarks.tooltip.autofocus.enable": "§8Ctrl+click here to enable auto-focus in the Search bar",
-  "stockkeeperbookmarks.tooltip.autofocus.disable": "§8Ctrl+click here to disable auto-focus in the Search bar"
+  "stockkeeperbookmarks.tooltip.autofocus": "§8Ctrl+click here to toggle auto-focus in the Search bar — %s",
+
+  "stockkeeperbookmarks.state.on": "§aON",
+  "stockkeeperbookmarks.state.off": "§cOFF"
 }
