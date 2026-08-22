@@ -307,6 +307,26 @@ entirely when the label fits at 1.0.
   address field is the normal case there, not a mistake. Blocking it would break
   those builds to protect against a misfire the empty-on-open behaviour already
   handles. Leave `sendIt()` alone.
+- **Pruning an entry when its block is destroyed.** The key is the Stock
+  *Ticker* block's position, and an entry for a broken ticker stays in the JSON
+  forever. This cannot be fixed client-side: the client is only told about blocks
+  in chunks loaded near the player, so a ticker broken by someone else while you
+  are away — or offline — is never observed at all. Detection would only ever
+  catch the case where you stood and watched it break, which is the case least in
+  need of automation. The alternatives that sidestep detection, an LRU cap or
+  ageing out entries not opened recently, can each delete a live keeper you simply
+  do not visit often. For a file of a few hundred bytes, unbounded growth is the
+  better trade than a rule that can eat real data.
+- **Narrator support on hover.** `Minecraft.getInstance().getNarrator().say(...)`
+  would work, given a check of `options.narrator()` to respect an Off or
+  chat-only setting, and a hover-*change* guard so it does not stutter every
+  frame. It is left out because it would be half a feature: hover narration only
+  reaches someone using a mouse *and* the narrator, while a keyboard user still
+  cannot reach a bookmark at all — the buttons are not widgets, so the narration
+  framework has nothing to focus. Real support means focus and narration
+  together, and focus is exactly what the not-a-widget decision above rules out.
+  Create's own Stock Keeper screen is not keyboard-navigable either, so this sits
+  level with the surrounding UI rather than below it.
 
 ---
 
