@@ -160,9 +160,9 @@ your addresses near the Stock Ticker and the field will suggest them.
 Working in-game against Create `6.0.10-280`, Minecraft 1.21.1, NeoForge 21.1.248, and
 run against every Create release from `6.0.0` to `6.0.10` without layout problems.
 
-The jar is a **NeoForge** build — `stock-keeper-bookmarks-neoforge-1.0.0.jar` — and should
-work in any NeoForge 1.21.1 setup that has Create. There is no Fabric or Forge build, which
-is what the `-neoforge` in the filename is there to make obvious before you download it.
+The jar is a **NeoForge** build, and should work in any NeoForge 1.21.1 setup that has
+Create. There is no Fabric or Forge build — the `-neoforge` in the filename is there to make
+that obvious before you download it, not to imply siblings exist.
 
 Also played on a multiplayer server that does **not** have it installed, which is the case
 the client-side claim rests on. That is one server though, not a guarantee: a conflicting
