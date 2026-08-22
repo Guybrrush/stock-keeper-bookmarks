@@ -173,3 +173,22 @@ mod or an unusual setup could still break it, which is why the mod description s
 ./gradlew build      # jar in build/libs/
 ./gradlew runClient  # dev client with Create loaded
 ```
+
+## License
+
+**LGPL-3.0-or-later**, in the form the licence is written to ship in: `COPYING` is the
+GPL-3.0 text, and `COPYING.LESSER` is the set of additional permissions that turn it into
+the LGPL.
+
+The short version: use it, ship it in a modpack, fork it, sell it if you want. If you
+distribute a *modified* version, that version has to stay open under the same licence with
+source available. Other mods that merely depend on this one are unaffected — that is
+exactly what LGPL relaxes compared to GPL.
+
+If you want to do something the licence does not allow, ask. As the copyright holder I can
+grant an exception.
+
+Create itself is separately licensed — MIT for its code, All Rights Reserved for its
+assets. This mod ships none of Create's files: it references
+`create:textures/gui/stock_keeper.png` at runtime, from the copy the player already has
+installed.
