@@ -27,6 +27,14 @@ public class AddressButton {
 	private static final int TEXT_PADDING = 4;
 	/** Below this the vanilla font stops being legible, so clipping takes over instead. */
 	private static final float MIN_TEXT_SCALE = 0.5F;
+	/**
+	 * Dropped below true centre on purpose.
+	 *
+	 * Centring on {@code font.lineHeight} (9) reserves room for a descender that most labels
+	 * never use, so the visible glyphs — 7px of cap height — end up sitting high in the row.
+	 * Vanilla buttons have the same tilt. This offsets it so the text reads level in the row.
+	 */
+	private static final float TEXT_Y_NUDGE = 2.0F;
 
 	private final String address;
 	private final int width;
@@ -67,7 +75,7 @@ public class AddressButton {
 				fitted = fitted.substring(0, fitted.length() - 1) + "…";
 		}
 		this.label = fitted;
-		this.textY = (height - font.lineHeight * scale) / 2.0F;
+		this.textY = (height - font.lineHeight * scale) / 2.0F + TEXT_Y_NUDGE;
 	}
 
 	public String getAddress() {
