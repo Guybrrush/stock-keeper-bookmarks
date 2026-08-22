@@ -22,5 +22,9 @@
   "stockkeeperbookmarks.tooltip.reorder": "§7• Drag a Bookmark to reorder",
   "stockkeeperbookmarks.tooltip.mode": "§8Click (or Shift+click) here to change the display — §f%s",
   "stockkeeperbookmarks.tooltip.hide": "§8Right-click here to hide the Bookmarks",
-  "stockkeeperbookmarks.tooltip.show": "§8Right-click here to show the Bookmarks"
+  "stockkeeperbookmarks.tooltip.show": "§8Right-click here to show the Bookmarks",
+  "stockkeeperbookmarks.tooltip.autofocus": "§8Ctrl+click here to enable/disable auto-focus in the Search bar — §f%s",
+
+  "stockkeeperbookmarks.state.on": "ON",
+  "stockkeeperbookmarks.state.off": "OFF"
 }

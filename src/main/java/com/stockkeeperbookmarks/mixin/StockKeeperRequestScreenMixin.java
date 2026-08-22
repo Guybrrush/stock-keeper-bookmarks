@@ -189,6 +189,13 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 			stockkeeperbookmarks$openedOnce = true;
 			if (AddressBookConfig.CLEAR_ADDRESS_ON_OPEN.get())
 				addressBox.setValue("");
+			// Inside the latch on purpose. init() also runs on every rebuildWidgets() — after
+			// a pin, a removal, a mode change — and stealing focus back to the search box each
+			// time would yank the cursor out from under whatever the player was doing.
+			if (AddressBookConfig.AUTO_FOCUS_SEARCH.get()) {
+				setFocused(searchBox);
+				searchBox.setFocused(true);
+			}
 		}
 
 		stockkeeperbookmarks$buttons.clear();
@@ -539,7 +546,10 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		CallbackInfoReturnable<Boolean> cir) {
 
 		if (stockkeeperbookmarks$isHeaderHovered(mouseX, mouseY)) {
-			if (button == 0)
+			// Ctrl before Shift: it selects a different action, not a direction.
+			if (button == 0 && hasControlDown())
+				stockkeeperbookmarks$toggleAutoFocus();
+			else if (button == 0)
 				stockkeeperbookmarks$cycleMode(hasShiftDown());
 			else if (button == 1)
 				stockkeeperbookmarks$toggleCollapsed();
@@ -792,6 +802,10 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		lines.add(Component.translatable(AddressBookConfig.COLLAPSED.get()
 			? "stockkeeperbookmarks.tooltip.show"
 			: "stockkeeperbookmarks.tooltip.hide").getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.autofocus",
+			Component.translatable(AddressBookConfig.AUTO_FOCUS_SEARCH.get()
+				? "stockkeeperbookmarks.state.on"
+				: "stockkeeperbookmarks.state.off")).getVisualOrderText());
 		return lines;
 	}
 
@@ -804,6 +818,18 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		AddressBookConfig.DISPLAY_MODE.set(backwards
 			? stockkeeperbookmarks$mode.previous()
 			: stockkeeperbookmarks$mode.next());
+		stockkeeperbookmarks$applySetting();
+	}
+
+	/**
+	 * Whether opening the screen puts the cursor in the item search box.
+	 *
+	 * Takes effect on the next open rather than immediately: focus is claimed once per open,
+	 * and grabbing it here would move the cursor while the player is still on the button.
+	 */
+	@Unique
+	private void stockkeeperbookmarks$toggleAutoFocus() {
+		AddressBookConfig.AUTO_FOCUS_SEARCH.set(!AddressBookConfig.AUTO_FOCUS_SEARCH.get());
 		stockkeeperbookmarks$applySetting();
 	}
 

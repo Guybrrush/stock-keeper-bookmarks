@@ -15,6 +15,7 @@ public class AddressBookConfig {
 	public static final ModConfigSpec.IntValue BUTTON_WIDTH;
 	public static final ModConfigSpec.EnumValue<DisplayMode> DISPLAY_MODE;
 	public static final ModConfigSpec.BooleanValue COLLAPSED;
+	public static final ModConfigSpec.BooleanValue AUTO_FOCUS_SEARCH;
 
 	static {
 		ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -38,6 +39,14 @@ public class AddressBookConfig {
 			.comment("true: clicking a destination button sends the order immediately.",
 				"false: clicking only selects the destination, you still press Send.")
 			.define("clickToSend", true);
+
+		AUTO_FOCUS_SEARCH = builder
+			.comment("Focus the item search box when the Stock Keeper is opened, so a search can",
+				"be typed straight away without clicking into it first.",
+				"Toggled in-game with Ctrl+click on the name-tag button.",
+				"Note that while the search box holds focus the pin key types into it rather",
+				"than pinning, which is the same rule that applies whenever you are searching.")
+			.define("autoFocusSearch", true);
 
 		CLEAR_ADDRESS_ON_OPEN = builder
 			.comment("Clear the address field each time the Stock Keeper is opened, so it never",
