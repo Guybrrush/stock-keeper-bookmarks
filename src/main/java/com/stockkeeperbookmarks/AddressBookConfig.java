@@ -21,13 +21,14 @@ public class AddressBookConfig {
 
 		ADDRESSES = builder
 			.comment("Starting destinations for a Stock Keeper you have not customised yet.",
+				"Empty by default: pin the destinations you use with the + button in-game.",
 				"Bookmarks are per Stock Keeper: the first edit to one copies this list into",
 				"config/stockkeeperbookmarks-bookmarks.json under that keeper's own entry, and from",
 				"then on that keeper is edited there, not here.",
 				"Editable in-game: type an address in the field and click the + button to pin it,",
 				"right-click a button to remove it, drag buttons to reorder them.")
 			.defineListAllowEmpty("addresses",
-				new ArrayList<>(List.of("workshop", "crafter", "smelter")),
+				new ArrayList<>(),
 				() -> "workshop",
 				o -> o instanceof String s && !s.isBlank());
 
