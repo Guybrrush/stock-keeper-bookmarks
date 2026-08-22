@@ -19,6 +19,8 @@ import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScree
 import com.stockkeeperbookmarks.AddressBookConfig;
 import com.stockkeeperbookmarks.BookmarkStore;
 import com.stockkeeperbookmarks.client.AddressButton;
+import com.stockkeeperbookmarks.client.FooterPatch;
+import com.stockkeeperbookmarks.client.ModKeys;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -148,6 +150,9 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	@Unique private int stockkeeperbookmarks$grabDy;
 	@Unique private boolean stockkeeperbookmarks$dragging;
 	@Unique private int stockkeeperbookmarks$ghostY;
+
+	/** Set when the pin key was consumed, so its character never reaches the address box. */
+	@Unique private boolean stockkeeperbookmarks$swallowChar;
 
 	private StockKeeperRequestScreenMixin(StockKeeperRequestMenu menu, Inventory inventory, Component title) {
 		super(menu, inventory, title);
@@ -315,11 +320,19 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * Repaint the button row. Injected at the point Create has finished drawing the footer
 	 * and the Send hover, but has not yet drawn the Send caption — so the caption (and its
 	 * "sent" fade animation) still lands on top of our artwork untouched.
+	 *
+	 * {@code require = 0} on purpose. This anchors to a string constant inside renderBg rather
+	 * than to a method name, so a Create update can move it out from under us; the whole point
+	 * of the sidebar is that it keeps working when that happens, and a mandatory injector would
+	 * instead crash the game on startup. {@link FooterPatch} carries the outcome to everything
+	 * that assumes this artwork exists.
 	 */
-	@Inject(method = "renderBg",
+	@Inject(method = "renderBg", require = 0,
 		at = @At(value = "CONSTANT", args = "stringValue=gui.stock_keeper.title"))
 	private void stockkeeperbookmarks$drawFooterRow(GuiGraphics graphics, float partialTick, int mouseX,
 		int mouseY, CallbackInfo ci) {
+
+		FooterPatch.markApplied();
 
 		int x = stockkeeperbookmarks$plusX();
 		int y = stockkeeperbookmarks$rowY();
@@ -365,7 +378,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * and a faded "just sent" branch), and immediately afterwards draws the "Request Sent"
 	 * ribbon with the same overload — an open-ended slice shifts that off-centre too.
 	 */
-	@ModifyArg(method = "renderBg",
+	@ModifyArg(method = "renderBg", require = 0,
 		slice = @Slice(
 			from = @At(value = "CONSTANT", args = "stringValue=gui.stock_keeper.send"),
 			to = @At(value = "CONSTANT", args = "stringValue=gui.stock_keeper.request_sent")),
@@ -384,26 +397,72 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 			&& mouseY >= y && mouseY < y + STOCKKEEPERBOOKMARKS$ROW_H;
 	}
 
-	/** Shrink Create's own hit test to the shortened button. */
+	/**
+	 * Shrink Create's own hit test to the shortened button — but only when the footer was really
+	 * repainted. Without that check a dropped artwork injection would leave Send drawn full width
+	 * while answering clicks on only part of it.
+	 */
 	@Inject(method = "isConfirmHovered", at = @At("HEAD"), cancellable = true)
 	private void stockkeeperbookmarks$narrowConfirm(int mouseX, int mouseY, CallbackInfoReturnable<Boolean> cir) {
+		if (!FooterPatch.isApplied())
+			return;
 		cir.setReturnValue(stockkeeperbookmarks$isSendHovered(mouseX, mouseY));
+	}
+
+	/** Pin whatever the address field currently holds. */
+	@Unique
+	private void stockkeeperbookmarks$pin() {
+		boolean pinned = BookmarkStore.add(stockkeeperbookmarks$key, addressBox.getValue());
+		if (pinned)
+			stockkeeperbookmarks$scheduleRebuild();
+		// With the tooltips gone, a flat low click is the only cue that a pin was
+		// refused — the address was blank or already pinned.
+		Minecraft.getInstance()
+			.getSoundManager()
+			.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pinned ? 1.0F : 0.5F));
+	}
+
+	/**
+	 * Keyboard route to the pin action, so pinning survives the footer injection being dropped.
+	 *
+	 * Deliberately live while the address box has focus: typing an address and then pinning it is
+	 * the entire flow, and demanding the box be unfocused first would make the key useless exactly
+	 * when it is the only control left. The search box is left alone so item searches can still
+	 * contain the character.
+	 */
+	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
+	private void stockkeeperbookmarks$pinKey(int keyCode, int scanCode, int modifiers,
+		CallbackInfoReturnable<Boolean> cir) {
+
+		stockkeeperbookmarks$swallowChar = false;
+		if (searchBox.isFocused() || !ModKeys.PIN.matches(keyCode, scanCode))
+			return;
+
+		stockkeeperbookmarks$pin();
+		// GLFW reports the typed character through a separate callback, so cancelling the key
+		// event is not on its own enough to keep a printable bind out of the focused address box.
+		stockkeeperbookmarks$swallowChar = true;
+		cir.setReturnValue(true);
+	}
+
+	/** Drop the character belonging to a keystroke already consumed as a pin. */
+	@Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
+	private void stockkeeperbookmarks$swallowPinChar(char codePoint, int modifiers,
+		CallbackInfoReturnable<Boolean> cir) {
+		if (!stockkeeperbookmarks$swallowChar)
+			return;
+		stockkeeperbookmarks$swallowChar = false;
+		cir.setReturnValue(true);
 	}
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void stockkeeperbookmarks$press(double mouseX, double mouseY, int button,
 		CallbackInfoReturnable<Boolean> cir) {
 
-		if (button == 0 && stockkeeperbookmarks$isPlusHovered((int) mouseX, (int) mouseY)) {
-			boolean pinned = BookmarkStore.add(stockkeeperbookmarks$key, addressBox.getValue());
-			if (pinned)
-				stockkeeperbookmarks$scheduleRebuild();
-			// With the tooltips gone, a flat low click is the only cue that a pin was
-			// refused — the address was blank or already pinned.
-			Minecraft.getInstance()
-				.getSoundManager()
-				.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(),
-					pinned ? 1.0F : 0.5F));
+		// Only claim the + area when that button was actually drawn there.
+		if (button == 0 && FooterPatch.isApplied()
+			&& stockkeeperbookmarks$isPlusHovered((int) mouseX, (int) mouseY)) {
+			stockkeeperbookmarks$pin();
 			cir.setReturnValue(true);
 			return;
 		}
@@ -524,11 +583,11 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * Draw the column, clipped to its viewport. Done here rather than through the screen's
 	 * renderable list so the scissor can wrap it and the lifted button always lands on top.
 	 *
-	 * HEAD, not TAIL. Create renders its tooltips at the end of renderForeground — the
-	 * address-box one last of all, immediately before the return. Injecting at TAIL put our
-	 * enableScissor call right after that tooltip was drawn but before its geometry had
-	 * necessarily been flushed, so the tooltip got clipped to this column's narrow rect and
-	 * came out blank. Drawing first is also the correct layering: tooltips belong on top.
+	 * HEAD, not TAIL, for layering: Create renders its tooltips at the end of renderForeground,
+	 * so a TAIL inject would paint this column on top of them.
+	 *
+	 * Note that the inject position is *not* what keeps tooltips from being clipped — the
+	 * explicit flush below is. See the scissor comment there before moving anything.
 	 */
 	@Inject(method = "renderForeground", at = @At("HEAD"))
 	private void stockkeeperbookmarks$drawColumn(GuiGraphics graphics, int mouseX, int mouseY,
@@ -547,6 +606,13 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		int bottom = top + stockkeeperbookmarks$viewportHeight;
 		AddressButton hovered = stockkeeperbookmarks$dragging ? null
 			: stockkeeperbookmarks$buttonAt(mouseX, mouseY);
+
+		// Flush before narrowing the clip. GuiGraphics flushes whatever geometry is still
+		// queued at the moment the scissor changes, so anything another mod has in flight —
+		// JEI's tooltips are the observed case — would be drawn clipped to this column and
+		// come out blank. Same failure mode as the address tooltip below, from the other side:
+		// moving to HEAD only changed *whose* geometry was caught by it.
+		graphics.flush();
 
 		graphics.enableScissor(stockkeeperbookmarks$columnX - 1, top, stockkeeperbookmarks$columnX + width + 1,
 			bottom);

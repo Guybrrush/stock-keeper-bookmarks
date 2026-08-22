@@ -84,14 +84,56 @@ All in `StockKeeperRequestScreenMixin`, all against `StockKeeperRequestScreen`.
 | `isConfirmHovered` | HEAD, cancel | Shrink Create's own Send hit test to the shortened button |
 | `mouseClicked` / `mouseDragged` / `mouseReleased` / `mouseScrolled` | HEAD, cancel | Own the sidebar's input. Each only cancels when our own state says the event is ours |
 | `getExtraAreas` | RETURN | Reserve the column from JEI/EMI |
+| `keyPressed` | HEAD, cancel | Keyboard route to the pin action, so pinning does not depend on the footer artwork |
+| `charTyped` | HEAD, cancel | Drop the character of a keystroke already consumed as a pin — GLFW delivers it through a separate callback, so cancelling `keyPressed` alone does not keep it out of the focused address box |
 
-**Never draw the column at `renderForeground` TAIL.** Create renders all four of its
-tooltips at the end of that method, the address-box one last — at bytecode offset
-656, with the return at 659. A TAIL inject lands in that gap, so `enableScissor`
-fires immediately after `renderComponentTooltip` and before its geometry has
-necessarily flushed; the tooltip is then clipped to the column's narrow rect and
-renders blank. HEAD avoids it and is the correct layering anyway, since tooltips
-belong above the column.
+**The two `renderBg` injectors are `require = 0`; everything else is mandatory.**
+They are the only ones anchored to a string constant inside a method rather than to
+a method name, which makes them the first thing a Create update will move. With the
+config's `defaultRequire: 1` they would take the whole game down on startup — over a
+button that is purely cosmetic.
+
+Both constants have in fact held stable across every Create release from `6.0.0` to
+`6.0.10`, which is real evidence that patch releases do not disturb them. The guard is
+kept anyway because the declared range `[6.0.0,6.1.0)` also admits *future* 6.0.x
+builds, and the cost of being wrong is asymmetric: `require = 0` costs a missing
+button, `require = 1` costs a game that will not start.
+
+Making them optional is not enough on its own, because two other injectors assume
+that artwork exists: the `+` hit box in `mouseClicked` would answer clicks for an
+invisible button, and `isConfirmHovered` would shrink the hit test of a Send button
+still drawn at full width. Both now gate on `FooterPatch`, a flag the repaint sets on
+its first frame. If the repaint is dropped the footer behaves exactly like Create's
+own, and the keybind carries the pin action.
+
+Order is safe: `renderBg` runs before any input event on a screen, so the flag is
+always resolved before anything reads it.
+
+**Always `graphics.flush()` before `enableScissor`.** This is the load-bearing line
+in the whole renderer, and it is not obvious.
+
+`GuiGraphics.applyScissor` calls `flushIfManaged()`, which flushes **only when
+`this.managed` is true** — and `managed` is set solely inside `drawManaged(Runnable)`.
+Normal screen rendering never wraps in that, so during `renderForeground` the buffer
+is *unmanaged* and changing the scissor does **not** flush. Any geometry another mod
+still has queued at that moment is therefore emitted clipped to this column's ~76px
+rect, and vanishes.
+
+The symptom is blank tooltips, and it is not limited to one victim. It first showed
+up as Create's address-box tooltip rendering empty; moving the inject from TAIL to
+HEAD made that stop, which looked like a fix but was not — it only changed *whose*
+geometry was in flight when the scissor narrowed. The bug stayed live and moved to
+**every JEI tooltip in the screen**, which is how it was eventually caught. An
+explicit `flush()` is unconditional and fixes it at any inject position.
+
+Reproducing it needs at least one bookmark: `drawColumn` returns early on an empty
+list, before the scissor is ever touched, so a keeper with no bookmarks looks fine.
+That is what made it look intermittent.
+
+**Draw the column at `renderForeground` HEAD** — but for layering, not for the above.
+Create renders all four of its tooltips at the end of that method, so a TAIL inject
+would paint the column over them. HEAD puts tooltips above the column, which is the
+correct order.
 
 The address-box tooltip is easy to miss in testing, because it only shows when the
 field is blank, unfocused and hovered — and `clearAddressOnOpen` means **this mod is
@@ -119,8 +161,16 @@ field read, no packet needed.
 
 Storage is `config/stockkeeperbookmarks-bookmarks.json`, keyed
 `worldScope | dimension | x,y,z`. The world scope (`server/<ip>` or
-`local/<level name>`) matters: without it, keepers at the same coordinates in two
+`local/<save folder>`) matters: without it, keepers at the same coordinates in two
 different saves would share bookmarks.
+
+The singleplayer half of that scope is the save's **folder**, not
+`getWorldData().getLevelName()`. Minecraft disambiguates the folder rather than the
+display name, so two saves both created as "New World" live in `New World` and
+`New World (1)` while both reporting the name "New World" — keying by name defeated
+the very collision the scope exists to prevent. The server half is lowercased and has
+an explicit `:25565` stripped, so the same host reached two ways stays one scope; a
+host entered once by name and once by raw IP still cannot be reconciled.
 
 A keeper with no entry falls back to the config `addresses` list; the first edit
 promotes it to its own entry. Untouched keepers cost nothing on disk.
@@ -226,10 +276,25 @@ entirely when the label fits at 1.0.
 
 ## Known gaps
 
-- **The declared Create range is wider than what is verified.**
-  `neoforge.mods.toml` allows `[6.0.0,6.1.0)`, but every constant in the table
-  above was read from `6.0.10-280` specifically. Earlier 6.0.x builds may lay the
-  sprite sheet out differently. Narrow the range or re-verify before shipping
-  broadly.
+- **The declared Create range is now verified across every released 6.0.x.**
+  The constants in the table above were read from `6.0.10-280`, but the mod has
+  since been run against each Create release from `6.0.0` to `6.0.10` with no
+  layout problems — so the sprite sheet and the string constants have held stable
+  for the whole line so far. What `[6.0.0,6.1.0)` still covers that nobody can test
+  is *future* 6.0.x patch releases; that residual exposure is what the two
+  `require = 0` injectors exist for.
+
+  That run predates the `keyPressed` / `charTyped` injectors, so it does not cover
+  them. They were checked separately and statically instead: `javap` on Create
+  `6.0.0` confirms `StockKeeperRequestScreen` overrides **every** method this mixin
+  targets — `init`, `renderBg`, `renderForeground`, `isConfirmHovered`, `sendIt`,
+  all four mouse handlers, `getExtraAreas`, and both `keyPressed(int,int,int)` and
+  `charTyped(char,int)` — and that all three anchor constants
+  (`gui.stock_keeper.title`, `.send`, `.request_sent`) are present in its `renderBg`.
+  Oldest and newest 6.0.x therefore agree on the entire injection surface.
+
+  **Worth repeating for any future injector**: `javap -p -cp <create.jar>` on the
+  target class is the cheap way to prove a mandatory injection cannot fail to find
+  its method, and it needs no game launch.
 - **No automated tests.** Everything here is GUI geometry against a third-party
   mod's private layout; verification has been visual, in-game.

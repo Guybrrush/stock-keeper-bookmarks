@@ -52,7 +52,7 @@ way to use it — the mod never blocks a send.
 
 | Key | Default | Meaning |
 | --- | --- | --- |
-| `addresses` | `workshop, crafter, smelter` | Starting bookmarks for a keeper you have not customised yet |
+| `addresses` | _(empty)_ | Starting bookmarks for a keeper you have not customised yet |
 | `clickToSend` | `true` | Click sends immediately; `false` = select, then press Send |
 | `clearAddressOnOpen` | `true` | The safeguard. `false` restores Create's sticky behaviour |
 | `buttonWidth` | `72` | Bookmark width in pixels |
@@ -70,9 +70,30 @@ the first pin, removal or reorder promotes it to its own entry.
 | Drag a bookmark | Reorder; auto-scrolls at the viewport edges |
 | Scroll wheel over the column | Scroll the list |
 | **+** in the footer | Pin whatever is typed in the address field |
+| **=** key (rebindable) | The same pin action, from the keyboard |
 
 A low-pitched click from **+** means nothing was pinned — the field was blank, or that
 address is already bookmarked.
+
+The pin key works while the address field has focus, since typing an address and pinning it
+is one flow — so the bound character cannot be typed *into* an address. Rebind it under
+Options → Controls if you need that character in a destination name. It is deliberately not
+swallowed while the item search box has focus.
+
+The pin key is **always active**. It is an ordinary keybind, registered at startup and listed
+under Options → Controls like any other — not something that materialises only when something
+breaks. Use it or the **+** button, whichever you prefer.
+
+It shows up as **`=`**, not `+`. Keybinds bind physical keys, and on QWERTY and AZERTY alike
+`+` is Shift + `=` — there is no `+` key on the main row for it to bind to, and Minecraft
+labels each key by its unshifted character. It is the same physical key you press to type `+`,
+and it pins with or without Shift held. The only key that genuinely reads `+` is the numpad's,
+which laptops do not have; rebind to it if you prefer.
+
+It does double as the safety net, which is why it was added: the footer **+** is drawn by the
+most fragile injection in the mod, and that injection is allowed to fail rather than crash the
+game (see below). If a future Create release ever drops the button, the key is how you keep
+pinning.
 
 ## Implementation
 
