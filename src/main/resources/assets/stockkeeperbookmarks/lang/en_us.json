@@ -1,4 +1,26 @@
 {
   "key.categories.stockkeeperbookmarks": "Create: Stock Keeper Bookmarks",
-  "key.stockkeeperbookmarks.pin": "Pin address as bookmark"
+  "key.stockkeeperbookmarks.pin": "Pin address as bookmark",
+
+  "stockkeeperbookmarks.mode.fit": "Fit",
+  "stockkeeperbookmarks.mode.fit_tooltips": "Fit + Tooltips",
+  "stockkeeperbookmarks.mode.ellipsed": "Ellipsed",
+  "stockkeeperbookmarks.mode.ellipsed_tooltips": "Ellipsed + Tooltips",
+  "stockkeeperbookmarks.mode.minimal": "Minimal",
+  "stockkeeperbookmarks.mode.minimal_tooltips": "Minimal + Tooltips",
+  "stockkeeperbookmarks.mode.wide": "Wide",
+  "stockkeeperbookmarks.mode.wide_tooltips": "Wide + Tooltips",
+  "stockkeeperbookmarks.mode.wrap": "Wrap",
+  "stockkeeperbookmarks.mode.wrap_tooltips": "Wrap + Tooltips",
+
+  "stockkeeperbookmarks.tooltip.title": "§e§lBookmarks",
+  "stockkeeperbookmarks.tooltip.pin.1": "§7• Use the §f+§7 button (or the §f%s§7 keybind)",
+  "stockkeeperbookmarks.tooltip.pin.2": "§7   to add the written address to the Bookmarks",
+  "stockkeeperbookmarks.tooltip.send.1": "§7• Click on a Bookmark to automatically send the selection",
+  "stockkeeperbookmarks.tooltip.send.2": "§7   to the corresponding Address",
+  "stockkeeperbookmarks.tooltip.remove": "§7• Right-click a Bookmark to remove it",
+  "stockkeeperbookmarks.tooltip.reorder": "§7• Drag a Bookmark to reorder",
+  "stockkeeperbookmarks.tooltip.mode": "§8Click (or Shift+click) here to change the display — §f%s",
+  "stockkeeperbookmarks.tooltip.hide": "§8Right-click here to hide the Bookmarks",
+  "stockkeeperbookmarks.tooltip.show": "§8Right-click here to show the Bookmarks"
 }

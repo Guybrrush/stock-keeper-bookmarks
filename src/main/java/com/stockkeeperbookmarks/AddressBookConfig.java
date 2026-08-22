@@ -13,6 +13,8 @@ public class AddressBookConfig {
 	public static final ModConfigSpec.BooleanValue CLICK_TO_SEND;
 	public static final ModConfigSpec.BooleanValue CLEAR_ADDRESS_ON_OPEN;
 	public static final ModConfigSpec.IntValue BUTTON_WIDTH;
+	public static final ModConfigSpec.EnumValue<DisplayMode> DISPLAY_MODE;
+	public static final ModConfigSpec.BooleanValue COLLAPSED;
 
 	static {
 		ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -44,8 +46,29 @@ public class AddressBookConfig {
 			.define("clearAddressOnOpen", true);
 
 		BUTTON_WIDTH = builder
-			.comment("Width in pixels of the destination buttons.")
+			.comment("Width in pixels of the destination buttons.",
+				"In WIDE display mode this is the minimum rather than the fixed width.")
 			.defineInRange("buttonWidth", 72, 40, 200);
+
+		DISPLAY_MODE = builder
+			.comment("How bookmark labels are laid out. Cycled in-game by left-clicking the",
+				"name-tag button above the list, which also carries a tooltip of the controls.",
+				"The _TOOLTIPS variants add a hover tooltip naming any address that had to be",
+				"cut short or shrunk to fit.",
+				"FIT:      fixed width; a long address shrinks, then takes an ellipsis.",
+				"ELLIPSED: fixed width; a long address is cut at full size, never shrunk.",
+				"MINIMAL:  a column only a few characters wide, cut at full size.",
+				"WIDE:     the column grows to the longest address, as far as the space to",
+				"          the left of the panel allows; at a high GUI scale that space can",
+				"          run out, and the label is cut after all.",
+				"WRAP:     fixed width and taller rows; a long address runs onto a second line.")
+			.defineEnum("displayMode", DisplayMode.FIT);
+
+		COLLAPSED = builder
+			.comment("Hide the bookmark list, leaving only the name-tag button.",
+				"Toggled in-game by right-clicking that button. The display mode above is kept,",
+				"so showing the list again restores the layout that was in use.")
+			.define("collapsed", false);
 
 		builder.pop();
 		SPEC = builder.build();

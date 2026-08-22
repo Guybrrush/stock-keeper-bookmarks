@@ -1,5 +1,10 @@
 package com.stockkeeperbookmarks.client;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.stockkeeperbookmarks.DisplayMode;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.Minecraft;
@@ -39,47 +44,122 @@ public class AddressButton {
 	 * of the row, and a flat pixel offset (which this replaced) pushed small text far too low.
 	 */
 	private static final float GLYPH_HEIGHT = 8.0F;
+	/** Breathing room between the two lines in {@link DisplayMode#WRAP}. */
+	private static final int LINE_GAP = 1;
+	/** WRAP never runs past two lines; a third would cost more row height than it is worth. */
+	private static final int MAX_WRAP_LINES = 2;
 
 	private final String address;
 	private final int width;
 	private final int height;
 
 	/**
-	 * Label metrics are resolved once here rather than per frame. Address, width and the
+	 * Label metrics are resolved once here rather than per frame. Address, width, mode and the
 	 * font are all fixed for the life of the button, and {@code Font#width} walks the whole
 	 * string — at render time that ran for every visible button on every frame for an
 	 * answer that never changed.
+	 *
+	 * {@code scale} is below 1 only in the single-line modes, so a wrapped label is never also
+	 * a shrunken one and the two never have to compose.
 	 */
-	private final String label;
+	private final List<String> lines;
 	private final float scale;
 	private final float textY;
+	/** Whether what is drawn is something less than the whole address, at full size. */
+	private final boolean abbreviated;
 
 	private int x;
 	private int y;
 	private boolean selected;
 	private boolean dragging;
 
-	public AddressButton(int width, int height, String address) {
+	public AddressButton(int width, int height, String address, DisplayMode mode) {
 		this.width = width;
 		this.height = height;
 		this.address = address;
 
 		Font font = Minecraft.getInstance().font;
 		int available = width - 2 * TEXT_PADDING;
-		int full = font.width(address);
 
-		// Shrink a long address rather than cutting it, down to the point where it would
-		// stop being readable; past that it still has to be clipped.
-		this.scale = full > available ? Math.max(MIN_TEXT_SCALE, available / (float) full) : 1.0F;
-
-		String fitted = address;
-		if (full * scale > available) {
-			fitted = font.plainSubstrByWidth(address, (int) (available / scale));
-			if (fitted.length() > 1)
-				fitted = fitted.substring(0, fitted.length() - 1) + "…";
+		switch (mode.layout()) {
+			case WRAP -> {
+				this.scale = 1.0F;
+				this.lines = wrap(font, address, available);
+			}
+			case FIT -> {
+				// Shrink a long address rather than cutting it, down to the point where it
+				// would stop being readable; past that it still has to be clipped.
+				int full = font.width(address);
+				this.scale =
+					full > available ? Math.max(MIN_TEXT_SCALE, available / (float) full) : 1.0F;
+				this.lines = List.of(ellipsise(font, address, (int) (available / scale)));
+			}
+			// ELLIPSED and MINIMAL cut rather than shrink, by definition. WIDE lands here too:
+			// it has already been sized to its longest label, so it only cuts in the case where
+			// the screen edge stopped the column growing.
+			default -> {
+				this.scale = 1.0F;
+				this.lines = List.of(ellipsise(font, address, available));
+			}
 		}
-		this.label = fitted;
-		this.textY = (height - GLYPH_HEIGHT * scale) / 2.0F;
+
+		// Shrunk counts as abbreviated, not just cut: half-size text is the legibility problem
+		// the tooltip modes exist to answer, and it is no more readable than an ellipsis.
+		this.abbreviated = scale < 1.0F || !String.join("", lines).equals(address);
+
+		float block = lines.size() * GLYPH_HEIGHT * scale + (lines.size() - 1) * LINE_GAP;
+		this.textY = (height - block) / 2.0F;
+	}
+
+	/** True when the label does not show the whole address at full size. */
+	public boolean isAbbreviated() {
+		return abbreviated;
+	}
+
+	/** Room for roughly three characters and an ellipsis, and nothing more. */
+	public static int minimalWidth() {
+		return Minecraft.getInstance().font.width("nnn…") + 2 * TEXT_PADDING;
+	}
+
+	/** Width this label needs to render at full size with nothing cut. */
+	public static int naturalWidth(String address) {
+		return Minecraft.getInstance().font.width(address) + 2 * TEXT_PADDING;
+	}
+
+	/** Row height needed for a mode's labels, given the single-line height. */
+	public static int rowHeight(DisplayMode mode, int singleLine) {
+		return mode.layout() == DisplayMode.Layout.WRAP
+			? singleLine + (int) GLYPH_HEIGHT + LINE_GAP
+			: singleLine;
+	}
+
+	/** Break across at most {@value #MAX_WRAP_LINES} lines; the last one still takes an ellipsis. */
+	private static List<String> wrap(Font font, String address, int available) {
+		List<String> out = new ArrayList<>(MAX_WRAP_LINES);
+		String rest = address;
+
+		for (int line = 1; line < MAX_WRAP_LINES; line++) {
+			if (font.width(rest) <= available)
+				break;
+			String head = font.plainSubstrByWidth(rest, available);
+			// A single glyph wider than the row would otherwise loop forever on an empty head.
+			if (head.isEmpty())
+				head = rest.substring(0, 1);
+			out.add(head);
+			rest = rest.substring(head.length());
+		}
+
+		out.add(ellipsise(font, rest, available));
+		return out;
+	}
+
+	private static String ellipsise(Font font, String text, int available) {
+		if (font.width(text) <= available)
+			return text;
+		String fitted = font.plainSubstrByWidth(text, available);
+		if (fitted.length() > 1)
+			fitted = fitted.substring(0, fitted.length() - 1) + "…";
+		return fitted;
 	}
 
 	public String getAddress() {
@@ -127,17 +207,21 @@ public class AddressButton {
 
 		Font font = Minecraft.getInstance().font;
 		int textX = atX + TEXT_PADDING;
+		int step = (int) GLYPH_HEIGHT + LINE_GAP;
 
 		// Most labels fit outright; only pay for the matrix push when one has to be shrunk.
+		// A shrunken label is always single-line, so the two paths never have to combine.
 		if (scale == 1.0F) {
-			graphics.drawString(font, label, textX, atY + (int) textY, textColor, false);
+			for (int i = 0; i < lines.size(); i++)
+				graphics.drawString(font, lines.get(i), textX, atY + (int) textY + i * step,
+					textColor, false);
 			return;
 		}
 
 		graphics.pose().pushPose();
 		graphics.pose().translate(textX, atY + textY, 0);
 		graphics.pose().scale(scale, scale, 1.0F);
-		graphics.drawString(font, label, 0, 0, textColor, false);
+		graphics.drawString(font, lines.get(0), 0, 0, textColor, false);
 		graphics.pose().popPose();
 	}
 }

@@ -55,7 +55,32 @@ way to use it — the mod never blocks a send.
 | `addresses` | _(empty)_ | Starting bookmarks for a keeper you have not customised yet |
 | `clickToSend` | `true` | Click sends immediately; `false` = select, then press Send |
 | `clearAddressOnOpen` | `true` | The safeguard. `false` restores Create's sticky behaviour |
-| `buttonWidth` | `72` | Bookmark width in pixels |
+| `buttonWidth` | `72` | Bookmark width in pixels. In `WIDE` it is the minimum, not the fixed width |
+| `displayMode` | `FIT` | Label layout — see below. Cycled in-game from the name-tag button |
+| `collapsed` | `false` | Whether the list is hidden. Toggled by right-clicking the name-tag button |
+
+### Display modes
+
+A small **name-tag button** sits above the bookmarks, aligned to the panel edge. Left-click
+cycles the layout, Shift+left-click steps back, right-click hides or shows the list. Hovering
+it explains all of this in a tooltip — and because it is drawn even when a keeper has no
+bookmarks yet, it is what tells you the mod is there at all.
+
+| Layout | What a too-long address does |
+| --- | --- |
+| `FIT` | Shrinks toward a legibility floor, then takes an ellipsis |
+| `ELLIPSED` | Never shrinks — cut at full size |
+| `MINIMAL` | Cut at full size, in a column a few characters wide |
+| `WIDE` | The column grows instead, as far as the space to its left allows |
+| `WRAP` | Runs onto a second line, in taller rows |
+
+Each has a `_TOOLTIPS` variant that names the full address on hover whenever the label had to
+be cut or shrunk. `WIDE_TOOLTIPS` is not redundant: the address box caps address length, so at
+an ordinary window size the column can always grow to fit — but at a high GUI scale, or a small
+window, it runs out of room and cuts after all.
+
+Collapsing is not one of the modes. It is a separate flag, so hiding the list and showing it
+again restores the layout you were using.
 
 Per-keeper bookmarks live in `config/stockkeeperbookmarks-bookmarks.json`, keyed by world,
 dimension and block position. A keeper with no entry shows the `addresses` list above;
@@ -71,6 +96,9 @@ the first pin, removal or reorder promotes it to its own entry.
 | Scroll wheel over the column | Scroll the list |
 | **+** in the footer | Pin whatever is typed in the address field |
 | **=** key (rebindable) | The same pin action, from the keyboard |
+| Left-click the name-tag button | Next display mode |
+| Shift + left-click it | Previous display mode |
+| Right-click it | Hide or show the bookmark list |
 
 A low-pitched click from **+** means nothing was pinned — the field was blank, or that
 address is already bookmarked.

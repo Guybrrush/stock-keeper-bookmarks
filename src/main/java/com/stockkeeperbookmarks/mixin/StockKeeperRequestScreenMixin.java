@@ -18,6 +18,7 @@ import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestMenu;
 import com.simibubi.create.content.logistics.stockTicker.StockKeeperRequestScreen;
 import com.stockkeeperbookmarks.AddressBookConfig;
 import com.stockkeeperbookmarks.BookmarkStore;
+import com.stockkeeperbookmarks.DisplayMode;
 import com.stockkeeperbookmarks.client.AddressButton;
 import com.stockkeeperbookmarks.client.FooterPatch;
 import com.stockkeeperbookmarks.client.ModKeys;
@@ -31,8 +32,11 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 @Mixin(StockKeeperRequestScreen.class)
 public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScreen<StockKeeperRequestMenu> {
@@ -69,6 +73,21 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	/** How close to an edge a dragged button must get before the column scrolls itself. */
 	@Unique private static final int STOCKKEEPERBOOKMARKS$AUTOSCROLL_EDGE = 10;
 	@Unique private static final int STOCKKEEPERBOOKMARKS$AUTOSCROLL_SPEED = 3;
+
+	// --- Mode button ---------------------------------------------------------------------
+	// Sits above the list and outside the scrolling viewport, so it stays put while the list
+	// moves and is the one part of the sidebar that is always on screen. On a keeper with no
+	// bookmarks it is the only thing drawn, which is what makes the mod discoverable at all.
+	/**
+	 * Square, and fixed at a bookmark's single-line height because that is exactly the size an
+	 * item icon renders at. It stays 16 even in WRAP, where the rows below it are taller — the
+	 * icon does not grow with them, so neither should its frame.
+	 */
+	@Unique private static final int STOCKKEEPERBOOKMARKS$HEADER_SIZE =
+		STOCKKEEPERBOOKMARKS$ROW_HEIGHT;
+	@Unique private static final int STOCKKEEPERBOOKMARKS$HEADER_GAP = 3;
+	/** Vanilla's hovered-slot wash, painted over the icon. The only affordance it has. */
+	@Unique private static final int STOCKKEEPERBOOKMARKS$HEADER_HIGHLIGHT = 0x80FFFFFF;
 
 	// --- Footer geometry -----------------------------------------------------------------
 	// Create draws its Send button 80x20 at (guiLeft + 145, guiTop + windowHeight - 41).
@@ -138,6 +157,12 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * re-reading the config mid-screen could leave the two disagreeing after a config reload.
 	 */
 	@Unique private int stockkeeperbookmarks$buttonWidth;
+	/** Resolved once per init alongside the width, for the same self-consistency reason. */
+	@Unique private DisplayMode stockkeeperbookmarks$mode;
+	/** Taller in WRAP, where a row has to hold two lines. */
+	@Unique private int stockkeeperbookmarks$rowHeight;
+	/** Built once per open rather than per frame; the icon never changes. */
+	@Unique private ItemStack stockkeeperbookmarks$icon;
 
 	/** Which Stock Keeper this screen is showing; null if the block entity was unavailable. */
 	@Unique private String stockkeeperbookmarks$key;
@@ -175,7 +200,12 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		stockkeeperbookmarks$key = BookmarkStore.keyFor(menu.contentHolder);
 
 		List<String> addresses = BookmarkStore.get(stockkeeperbookmarks$key);
-		int width = AddressBookConfig.BUTTON_WIDTH.get();
+		DisplayMode mode = AddressBookConfig.DISPLAY_MODE.get();
+		stockkeeperbookmarks$mode = mode;
+		stockkeeperbookmarks$icon = Items.NAME_TAG.getDefaultInstance();
+		stockkeeperbookmarks$rowHeight = AddressButton.rowHeight(mode, STOCKKEEPERBOOKMARKS$ROW_HEIGHT);
+
+		int width = stockkeeperbookmarks$widthFor(mode, addresses);
 		stockkeeperbookmarks$buttonWidth = width;
 		// Sit flush against the body's border: the buttons' outer border lands on the last
 		// pixel before it, so they touch without crossing. The scrollbar lives in the gutter
@@ -188,25 +218,62 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 
 		// The column is as tall as the requested share of the panel, but never runs past
 		// the panel's own bottom edge — at small window heights that limit binds first.
-		int toWindowBottom = getGuiTop() + windowHeight - stockkeeperbookmarks$columnTop;
-		stockkeeperbookmarks$viewportHeight = Math.min(
-			Math.round(windowHeight * STOCKKEEPERBOOKMARKS$VIEWPORT_SHARE), toWindowBottom);
+		int toWindowBottom = getGuiTop() + windowHeight - stockkeeperbookmarks$viewportTop();
+		stockkeeperbookmarks$viewportHeight = Math.max(0, Math.min(
+			Math.round(windowHeight * STOCKKEEPERBOOKMARKS$VIEWPORT_SHARE), toWindowBottom));
 
-		for (String address : addresses) {
-			AddressButton button = new AddressButton(width, STOCKKEEPERBOOKMARKS$ROW_HEIGHT, address);
-			button.setSelected(address.equals(addressBox.getValue()));
-			stockkeeperbookmarks$buttons.add(button);
-		}
+		// Collapsed simply leaves the list unbuilt. Every guard for an empty list already does
+		// the right thing, so hiding it needs no separate path through render or input.
+		if (!AddressBookConfig.COLLAPSED.get())
+			for (String address : addresses) {
+				AddressButton button =
+					new AddressButton(width, stockkeeperbookmarks$rowHeight, address, mode);
+				button.setSelected(address.equals(addressBox.getValue()));
+				stockkeeperbookmarks$buttons.add(button);
+			}
 		stockkeeperbookmarks$scrollTo(stockkeeperbookmarks$scroll);
 
-		stockkeeperbookmarks$reservedArea = new Rect2i(stockkeeperbookmarks$columnLeft(),
-			stockkeeperbookmarks$columnTop,
-			stockkeeperbookmarks$columnRight() - stockkeeperbookmarks$columnLeft(),
-			stockkeeperbookmarks$viewportHeight);
+		// Reserve the name-tag button as well as the list, so JEI keeps clear of both — and
+		// only the button itself once the list is hidden, so the space goes back to JEI.
+		stockkeeperbookmarks$reservedArea = stockkeeperbookmarks$buttons.isEmpty()
+			? new Rect2i(stockkeeperbookmarks$headerX(), stockkeeperbookmarks$columnTop,
+				STOCKKEEPERBOOKMARKS$HEADER_SIZE, STOCKKEEPERBOOKMARKS$HEADER_SIZE)
+			: new Rect2i(stockkeeperbookmarks$columnLeft(), stockkeeperbookmarks$columnTop,
+				stockkeeperbookmarks$columnRight() - stockkeeperbookmarks$columnLeft(),
+				STOCKKEEPERBOOKMARKS$HEADER_SIZE + STOCKKEEPERBOOKMARKS$HEADER_GAP
+					+ stockkeeperbookmarks$viewportHeight);
+	}
+
+	/**
+	 * WIDE grows the column to its longest label, but the column is anchored to the panel and
+	 * grows leftward, so it can only claim the space actually there. Past that it stops growing
+	 * and the labels shrink as they would in FIT — the mode degrades rather than overflowing.
+	 */
+	@Unique
+	private int stockkeeperbookmarks$widthFor(DisplayMode mode, List<String> addresses) {
+		int configured = AddressBookConfig.BUTTON_WIDTH.get();
+		if (mode.layout() == DisplayMode.Layout.MINIMAL)
+			return AddressButton.minimalWidth();
+		if (mode.layout() != DisplayMode.Layout.WIDE)
+			return configured;
+
+		int widest = configured;
+		for (String address : addresses)
+			widest = Math.max(widest, AddressButton.naturalWidth(address));
+
+		int available = getGuiLeft() + STOCKKEEPERBOOKMARKS$BODY_EDGE_DX
+			- STOCKKEEPERBOOKMARKS$COLUMN_GAP - (STOCKKEEPERBOOKMARKS$SCROLLBAR_W + 4);
+		return Math.min(widest, Math.max(configured, available));
+	}
+
+	/** Top of the scrolling list: below the mode button, which does not scroll with it. */
+	@Unique private int stockkeeperbookmarks$viewportTop() {
+		return stockkeeperbookmarks$columnTop + STOCKKEEPERBOOKMARKS$HEADER_SIZE
+			+ STOCKKEEPERBOOKMARKS$HEADER_GAP;
 	}
 
 	@Unique private int stockkeeperbookmarks$pitch() {
-		return STOCKKEEPERBOOKMARKS$ROW_HEIGHT + STOCKKEEPERBOOKMARKS$ROW_GAP;
+		return stockkeeperbookmarks$rowHeight + STOCKKEEPERBOOKMARKS$ROW_GAP;
 	}
 
 	/** Left edge of the column, i.e. the scrollbar gutter that sits outside the buttons. */
@@ -246,7 +313,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * would fall outside the scissor and be clipped away.
 	 */
 	@Unique private int stockkeeperbookmarks$contentTop() {
-		return stockkeeperbookmarks$columnTop + 1;
+		return stockkeeperbookmarks$viewportTop() + 1;
 	}
 
 	/** Snap every button to the slot its current index describes, minus the scroll offset. */
@@ -262,8 +329,8 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	private boolean stockkeeperbookmarks$inViewport(double mouseX, double mouseY) {
 		return mouseX >= stockkeeperbookmarks$columnLeft()
 			&& mouseX < stockkeeperbookmarks$columnRight()
-			&& mouseY >= stockkeeperbookmarks$columnTop
-			&& mouseY < stockkeeperbookmarks$columnTop + stockkeeperbookmarks$viewportHeight;
+			&& mouseY >= stockkeeperbookmarks$viewportTop()
+			&& mouseY < stockkeeperbookmarks$viewportTop() + stockkeeperbookmarks$viewportHeight;
 	}
 
 	/** A button only counts as hit where it is actually visible, not where it scrolled to. */
@@ -459,6 +526,17 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	private void stockkeeperbookmarks$press(double mouseX, double mouseY, int button,
 		CallbackInfoReturnable<Boolean> cir) {
 
+		if (stockkeeperbookmarks$isHeaderHovered(mouseX, mouseY)) {
+			if (button == 0)
+				stockkeeperbookmarks$cycleMode(hasShiftDown());
+			else if (button == 1)
+				stockkeeperbookmarks$toggleCollapsed();
+			else
+				return;
+			cir.setReturnValue(true);
+			return;
+		}
+
 		// Only claim the + area when that button was actually drawn there.
 		if (button == 0 && FooterPatch.isApplied()
 			&& stockkeeperbookmarks$isPlusHovered((int) mouseX, (int) mouseY)) {
@@ -519,7 +597,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 */
 	@Unique
 	private void stockkeeperbookmarks$updateDrag(double mouseY) {
-		int top = stockkeeperbookmarks$columnTop;
+		int top = stockkeeperbookmarks$viewportTop();
 		int bottom = top + stockkeeperbookmarks$viewportHeight;
 
 		if (mouseY < top + STOCKKEEPERBOOKMARKS$AUTOSCROLL_EDGE)
@@ -529,7 +607,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 
 		// Keep the lifted copy inside the viewport; it is drawn clipped to it anyway.
 		stockkeeperbookmarks$ghostY = Mth.clamp((int) mouseY - stockkeeperbookmarks$grabDy,
-			stockkeeperbookmarks$contentTop(), bottom - STOCKKEEPERBOOKMARKS$ROW_HEIGHT);
+			stockkeeperbookmarks$contentTop(), bottom - stockkeeperbookmarks$rowHeight);
 
 		// The slots move with the scroll offset, so the drop index is a content-space figure.
 		int pitch = stockkeeperbookmarks$pitch();
@@ -593,6 +671,10 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	private void stockkeeperbookmarks$drawColumn(GuiGraphics graphics, int mouseX, int mouseY,
 		float partialTick, CallbackInfo ci) {
 
+		// Drawn before the early return: on a keeper with no bookmarks this is the only thing
+		// the sidebar shows, and it is what tells a player the mod is there at all.
+		stockkeeperbookmarks$drawHeader(graphics, mouseX, mouseY);
+
 		if (stockkeeperbookmarks$buttons.isEmpty())
 			return;
 
@@ -602,7 +684,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 			stockkeeperbookmarks$updateDrag(mouseY);
 
 		int width = stockkeeperbookmarks$buttonWidth;
-		int top = stockkeeperbookmarks$columnTop;
+		int top = stockkeeperbookmarks$viewportTop();
 		int bottom = top + stockkeeperbookmarks$viewportHeight;
 		AddressButton hovered = stockkeeperbookmarks$dragging ? null
 			: stockkeeperbookmarks$buttonAt(mouseX, mouseY);
@@ -624,6 +706,107 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		graphics.disableScissor();
 
 		stockkeeperbookmarks$drawScrollbar(graphics, top);
+
+		// Only worth a tooltip when the label is not already telling the whole truth. Deferred
+		// like the header's, so it lands after the screen and outside this scissor.
+		if (hovered != null && stockkeeperbookmarks$mode.tooltips() && hovered.isAbbreviated())
+			setTooltipForNextRenderPass(Component.literal(hovered.getAddress()));
+	}
+
+	/**
+	 * Right edge aligned with the bookmarks, not the left. The column is anchored to the panel
+	 * and grows leftward, so its right edge is the one fixed relative to the screen — aligning
+	 * there keeps the button in the same place when WIDE changes the column's width.
+	 */
+	@Unique private int stockkeeperbookmarks$headerX() {
+		return stockkeeperbookmarks$columnX + stockkeeperbookmarks$buttonWidth
+			- STOCKKEEPERBOOKMARKS$HEADER_SIZE;
+	}
+
+	@Unique
+	private boolean stockkeeperbookmarks$isHeaderHovered(double mouseX, double mouseY) {
+		int x = stockkeeperbookmarks$headerX();
+		return mouseX >= x && mouseX < x + STOCKKEEPERBOOKMARKS$HEADER_SIZE
+			&& mouseY >= stockkeeperbookmarks$columnTop
+			&& mouseY < stockkeeperbookmarks$columnTop + STOCKKEEPERBOOKMARKS$HEADER_SIZE;
+	}
+
+	/**
+	 * The mode button: current mode as its label, the controls as its tooltip.
+	 *
+	 * The tooltip goes through {@code setTooltipForNextRenderPass} rather than being drawn
+	 * here. Vanilla renders deferred tooltips in {@code renderWithTooltip}, after the whole
+	 * screen and outside any scissor — which is the only safe place for one in this file.
+	 * Drawing it inline would put it under Create's foreground, and clipped by the column.
+	 */
+	@Unique
+	private void stockkeeperbookmarks$drawHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+		int x = stockkeeperbookmarks$headerX();
+		int y = stockkeeperbookmarks$columnTop;
+		int size = STOCKKEEPERBOOKMARKS$HEADER_SIZE;
+		boolean hovered = stockkeeperbookmarks$isHeaderHovered(mouseX, mouseY);
+
+		// Bare icon, no frame or plate. An item renders at exactly 16x16, so it needs no scaling.
+		graphics.renderItem(stockkeeperbookmarks$icon, x, y);
+
+		// Over the icon, not behind it — the same order vanilla uses for a hovered slot.
+		if (hovered) {
+			graphics.fill(x, y, x + size, y + size, STOCKKEEPERBOOKMARKS$HEADER_HIGHLIGHT);
+			setTooltipForNextRenderPass(stockkeeperbookmarks$headerTooltip());
+		}
+	}
+
+	/**
+	 * Blank lines rather than a drawn rule: a tooltip is sized to its widest line, so a rule of
+	 * fixed length would either fall short of the box or decide how wide the box is.
+	 */
+	@Unique
+	private List<FormattedCharSequence> stockkeeperbookmarks$headerTooltip() {
+		List<FormattedCharSequence> lines = new ArrayList<>();
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.title").getVisualOrderText());
+		lines.add(FormattedCharSequence.EMPTY);
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.pin.1",
+			ModKeys.PIN.getTranslatedKeyMessage()).getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.pin.2").getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.send.1").getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.send.2").getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.remove").getVisualOrderText());
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.reorder").getVisualOrderText());
+		lines.add(FormattedCharSequence.EMPTY);
+		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.mode",
+			Component.translatable(stockkeeperbookmarks$mode.translationKey())).getVisualOrderText());
+		lines.add(Component.translatable(AddressBookConfig.COLLAPSED.get()
+			? "stockkeeperbookmarks.tooltip.show"
+			: "stockkeeperbookmarks.tooltip.hide").getVisualOrderText());
+		return lines;
+	}
+
+	/**
+	 * Advance the display mode and persist it. Global rather than per keeper: it is a display
+	 * preference, and keeping it in the config avoids versioning the bookmarks file for it.
+	 */
+	@Unique
+	private void stockkeeperbookmarks$cycleMode(boolean backwards) {
+		AddressBookConfig.DISPLAY_MODE.set(backwards
+			? stockkeeperbookmarks$mode.previous()
+			: stockkeeperbookmarks$mode.next());
+		stockkeeperbookmarks$applySetting();
+	}
+
+	/** Hide or show the list. The mode is untouched, so showing it back restores the layout. */
+	@Unique
+	private void stockkeeperbookmarks$toggleCollapsed() {
+		AddressBookConfig.COLLAPSED.set(!AddressBookConfig.COLLAPSED.get());
+		stockkeeperbookmarks$applySetting();
+	}
+
+	@Unique
+	private void stockkeeperbookmarks$applySetting() {
+		AddressBookConfig.SPEC.save();
+		stockkeeperbookmarks$scheduleRebuild();
+		Minecraft.getInstance()
+			.getSoundManager()
+			.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
 	}
 
 	@Unique
