@@ -109,6 +109,42 @@ own, and the keybind carries the pin action.
 Order is safe: `renderBg` runs before any input event on a screen, so the flag is
 always resolved before anything reads it.
 
+**When an injector may be made optional.** The test is not how important it is —
+it is whether its failure is *contained*. Something else has to cover the loss,
+and nothing may be left in a half-state. The footer pair qualifies on both counts:
+`FooterPatch` gates the `+` hit box and the narrowed Send, and the pin keybind is
+an independent route to the one action that would otherwise become impossible.
+
+Nothing else qualifies, and dropping `require` on the rest would trade a loud
+failure for a quieter, worse one. If `init` did not apply while `renderForeground`
+did, `drawHeader` would dereference a null `mode` and call `renderItem(null, ...)`
+— still a crash, only later and pointing at rendering rather than at the cause. If
+`renderForeground` dropped while `mouseClicked` survived, the column would be
+invisible and still clickable, which is the exact trap `FooterPatch` exists to
+prevent. Covering those would mean null-guarding the whole renderer to defend
+against something that cannot happen.
+
+**Every mandatory target is verified present at both ends of the declared range.**
+`javap` against Create `6.0.0` and `6.0.10` confirms all sixteen members this mixin
+binds to exist in both:
+
+- **injected** — `init`, `renderBg`, `renderForeground`, `isConfirmHovered`,
+  `getExtraAreas`, `keyPressed`, `charTyped`, `mouseClicked`, `mouseDragged`,
+  `mouseReleased`, `mouseScrolled`
+- **`@Shadow`** — `sendIt()`, and the fields `searchBox`, `addressBox`,
+  `windowHeight`, `itemsY`
+
+Shadows belong in that audit: a missing shadowed field fails the mixin just as hard
+as a missing injection target, and is the half that is easy to forget. Re-run it
+with `javap -p -cp <create.jar> <class>` after any Create version bump — it needs
+no game launch, and it is the cheap way to know a mandatory binding cannot fail.
+
+So `defaultRequire: 1` stays, as a decision rather than an inherited default.
+Separately, `"required": true` at the top of the config is a different setting — it
+governs whether the mixin must apply to its target class at all, not the individual
+injectors. Create is a hard dependency, so that class is always present and `true`
+is correct.
+
 **Always `graphics.flush()` before `enableScissor`.** This is the load-bearing line
 in the whole renderer, and it is not obvious.
 
