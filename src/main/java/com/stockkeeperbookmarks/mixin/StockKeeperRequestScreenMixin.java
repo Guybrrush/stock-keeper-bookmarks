@@ -802,10 +802,9 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		lines.add(Component.translatable(AddressBookConfig.COLLAPSED.get()
 			? "stockkeeperbookmarks.tooltip.show"
 			: "stockkeeperbookmarks.tooltip.hide").getVisualOrderText());
-		lines.add(Component.translatable("stockkeeperbookmarks.tooltip.autofocus",
-			Component.translatable(AddressBookConfig.AUTO_FOCUS_SEARCH.get()
-				? "stockkeeperbookmarks.state.on"
-				: "stockkeeperbookmarks.state.off")).getVisualOrderText());
+		lines.add(Component.translatable(AddressBookConfig.AUTO_FOCUS_SEARCH.get()
+			? "stockkeeperbookmarks.tooltip.autofocus.disable"
+			: "stockkeeperbookmarks.tooltip.autofocus.enable").getVisualOrderText());
 		return lines;
 	}
 
