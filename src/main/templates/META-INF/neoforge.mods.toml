@@ -16,7 +16,7 @@ Replaces the Stock Keeper's single sticky address prompt with a column of
 one-click destination buttons. The address field no longer inherits whatever
 was typed last, so a stray keystroke can't ship your order to the crusher.
 
-Client-side only — works on any server running Create.
+Client-side only — should work on any Minecraft 1.21.1 server running Create.
 '''
 
 [[mixins]]

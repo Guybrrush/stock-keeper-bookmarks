@@ -153,7 +153,13 @@ your addresses near the Stock Ticker and the field will suggest them.
 
 ## Status
 
-Working in-game against Create `6.0.10-280`, Minecraft 1.21.1, NeoForge 21.1.248.
+Working in-game against Create `6.0.10-280`, Minecraft 1.21.1, NeoForge 21.1.248, and
+run against every Create release from `6.0.0` to `6.0.10` without layout problems.
+
+Also played on a multiplayer server that does **not** have it installed — uberswe's
+*Gearworks 2* — which is the case the client-side claim rests on. That is one server
+though, not a guarantee: a conflicting mod or an unusual setup could still break it, which
+is why the mod description says *should* work rather than *works*.
 
 ```
 ./gradlew build      # jar in build/libs/
