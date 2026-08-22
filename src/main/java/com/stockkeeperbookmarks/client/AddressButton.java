@@ -28,13 +28,17 @@ public class AddressButton {
 	/** Below this the vanilla font stops being legible, so clipping takes over instead. */
 	private static final float MIN_TEXT_SCALE = 0.5F;
 	/**
-	 * Dropped below true centre on purpose.
+	 * The height labels are centred on, in place of {@code font.lineHeight}.
 	 *
-	 * Centring on {@code font.lineHeight} (9) reserves room for a descender that most labels
-	 * never use, so the visible glyphs — 7px of cap height — end up sitting high in the row.
-	 * Vanilla buttons have the same tilt. This offsets it so the text reads level in the row.
+	 * lineHeight is 9, but the ninth row is leading that no glyph draws into, so centring on it
+	 * biases every label upward and leaves the row looking top-heavy. Vanilla centres widget
+	 * labels on 8 for exactly this reason — {@code AbstractWidget.renderString} uses
+	 * {@code (height - 8) / 2} — so this matches every other button in the game.
+	 *
+	 * It has to be multiplied by {@code scale}: a shrunken label occupies proportionally less
+	 * of the row, and a flat pixel offset (which this replaced) pushed small text far too low.
 	 */
-	private static final float TEXT_Y_NUDGE = 2.0F;
+	private static final float GLYPH_HEIGHT = 8.0F;
 
 	private final String address;
 	private final int width;
@@ -75,7 +79,7 @@ public class AddressButton {
 				fitted = fitted.substring(0, fitted.length() - 1) + "…";
 		}
 		this.label = fitted;
-		this.textY = (height - font.lineHeight * scale) / 2.0F + TEXT_Y_NUDGE;
+		this.textY = (height - GLYPH_HEIGHT * scale) / 2.0F;
 	}
 
 	public String getAddress() {
