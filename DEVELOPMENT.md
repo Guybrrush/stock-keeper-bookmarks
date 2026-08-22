@@ -39,7 +39,7 @@ anything but `StockKeeperRequestScreen`.
   the same as in dev, so mixin targets are written against those names directly.
 - `neoforge.mods.toml` is **generated** from `src/main/templates/META-INF/` by
   the `generateModMetadata` task — edit the template, not `build/`.
-- Local testing is a copy of `build/libs/stockkeeperbookmarks-0.1.0.jar` into a
+- Local testing is a copy of `build/libs/stockkeeperbookmarks-<version>.jar` into a
   Modrinth App instance's `mods` folder. **Verify the copy landed**: if the game
   is running, Windows refuses the overwrite and `cp` still reports success, so
   compare hashes rather than trusting the exit code.
