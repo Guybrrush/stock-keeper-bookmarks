@@ -1,6 +1,8 @@
 modLoader="javafml"
 loaderVersion="${loader_version_range}"
 license="${mod_license}"
+# Top level on purpose: inside [[mods]] this key is silently ignored.
+issueTrackerURL="${mod_issues}"
 
 [[mods]]
 modId="${mod_id}"
@@ -8,6 +10,7 @@ version="${mod_version}"
 displayName="${mod_name}"
 authors="${mod_authors}"
 logoFile="icon.png"
+displayURL="${mod_url}"
 description='''
 Replaces the Stock Keeper's single sticky address prompt with a column of
 one-click destination buttons. The address field no longer inherits whatever
