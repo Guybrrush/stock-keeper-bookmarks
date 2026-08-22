@@ -476,17 +476,29 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		cir.setReturnValue(stockkeeperbookmarks$isSendHovered(mouseX, mouseY));
 	}
 
+	/**
+	 * UI feedback for the sidebar's actions.
+	 *
+	 * Full pitch means the thing you asked for happened; low pitch means the list is not what
+	 * you left it as — an entry removed, or a pin refused. Nothing here opens a dialog, so the
+	 * click is the entire confirmation.
+	 */
+	@Unique
+	private void stockkeeperbookmarks$click(float pitch) {
+		Minecraft.getInstance()
+			.getSoundManager()
+			.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pitch));
+	}
+
 	/** Pin whatever the address field currently holds. */
 	@Unique
 	private void stockkeeperbookmarks$pin() {
 		boolean pinned = BookmarkStore.add(stockkeeperbookmarks$key, addressBox.getValue());
 		if (pinned)
 			stockkeeperbookmarks$scheduleRebuild();
-		// With the tooltips gone, a flat low click is the only cue that a pin was
-		// refused — the address was blank or already pinned.
-		Minecraft.getInstance()
-			.getSoundManager()
-			.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), pinned ? 1.0F : 0.5F));
+		// A low click is the only cue that a pin was refused — the address was blank, or
+		// that destination is already bookmarked.
+		stockkeeperbookmarks$click(pinned ? 1.0F : 0.5F);
 	}
 
 	/**
@@ -552,6 +564,8 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		if (button == 1) {
 			BookmarkStore.remove(stockkeeperbookmarks$key, hit.getAddress());
 			stockkeeperbookmarks$scheduleRebuild();
+			// Removal is instant and has no undo, so it should at least sound like it happened.
+			stockkeeperbookmarks$click(0.5F);
 			cir.setReturnValue(true);
 			return;
 		}
@@ -804,9 +818,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	private void stockkeeperbookmarks$applySetting() {
 		AddressBookConfig.SPEC.save();
 		stockkeeperbookmarks$scheduleRebuild();
-		Minecraft.getInstance()
-			.getSoundManager()
-			.play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
+		stockkeeperbookmarks$click(1.0F);
 	}
 
 	@Unique
