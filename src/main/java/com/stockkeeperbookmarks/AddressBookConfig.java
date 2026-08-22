@@ -75,7 +75,7 @@ public class AddressBookConfig {
 
 		COLLAPSED = builder
 			.comment("Hide the bookmark list, leaving only the name-tag button.",
-				"Toggled in-game by right-clicking that button. The display mode above is kept,",
+				"Toggled in-game by Shift+clicking that button. The display mode above is kept,",
 				"so showing the list again restores the layout that was in use.")
 			.define("collapsed", false);
 

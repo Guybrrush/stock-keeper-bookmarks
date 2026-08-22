@@ -11,7 +11,7 @@ import java.util.Locale;
  * variant. Cycling eight modes is only tolerable because the header tooltip names the current
  * one and re-renders under the cursor after each click, so the cycle is never blind.
  *
- * Collapsing is deliberately *not* one of these. It is a separate flag on right-click, so that
+ * Collapsing is deliberately *not* one of these. It is a separate flag on Shift+click, so that
  * hiding the list and restoring it does not lose the layout that was chosen.
  */
 public enum DisplayMode {
@@ -70,7 +70,7 @@ public enum DisplayMode {
 		return all[(ordinal() + 1) % all.length];
 	}
 
-	/** Ten modes is a long way round; Shift-clicking steps back rather than all the way on. */
+	/** Ten modes is a long way round; right-clicking steps back rather than all the way on. */
 	public DisplayMode previous() {
 		DisplayMode[] all = values();
 		return all[(ordinal() + all.length - 1) % all.length];

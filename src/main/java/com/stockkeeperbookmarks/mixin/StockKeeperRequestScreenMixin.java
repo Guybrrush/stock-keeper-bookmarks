@@ -546,13 +546,16 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		CallbackInfoReturnable<Boolean> cir) {
 
 		if (stockkeeperbookmarks$isHeaderHovered(mouseX, mouseY)) {
-			// Ctrl before Shift: it selects a different action, not a direction.
+			// Left and right are forward and back through the cycle, which is what people reach
+			// for. The modifiers carry the actions that are not a direction at all.
 			if (button == 0 && hasControlDown())
 				stockkeeperbookmarks$toggleAutoFocus();
-			else if (button == 0)
-				stockkeeperbookmarks$cycleMode(hasShiftDown());
-			else if (button == 1)
+			else if (button == 0 && hasShiftDown())
 				stockkeeperbookmarks$toggleCollapsed();
+			else if (button == 0)
+				stockkeeperbookmarks$cycleMode(false);
+			else if (button == 1)
+				stockkeeperbookmarks$cycleMode(true);
 			else
 				return;
 			cir.setReturnValue(true);

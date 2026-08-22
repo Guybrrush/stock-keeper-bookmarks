@@ -58,12 +58,14 @@ way to use it — the mod never blocks a send.
 | `clearAddressOnOpen` | `true` | The safeguard. `false` restores Create's sticky behaviour |
 | `buttonWidth` | `72` | Bookmark width in pixels. In `WIDE` it is the minimum, not the fixed width |
 | `displayMode` | `FIT` | Label layout — see below. Cycled in-game from the name-tag button |
-| `collapsed` | `false` | Whether the list is hidden. Toggled by right-clicking the name-tag button |
+| `collapsed` | `false` | Whether the list is hidden. Toggled by Shift+clicking the name-tag button |
+| `autoFocusSearch` | `true` | Focus the item search box on open. Toggled by Ctrl+clicking that button |
 
 ### Display modes
 
 A small **name-tag button** sits above the bookmarks, aligned to the panel edge. Left-click
-cycles the layout, Shift+left-click steps back, right-click hides or shows the list. Hovering
+cycles the layout and right-click steps back, Shift+click hides or shows the list, and
+Ctrl+click toggles whether the search box is focused when the screen opens. Hovering
 it explains all of this in a tooltip — and because it is drawn even when a keeper has no
 bookmarks yet, it is what tells you the mod is there at all.
 
@@ -98,8 +100,9 @@ the first pin, removal or reorder promotes it to its own entry.
 | **+** in the footer | Pin whatever is typed in the address field |
 | **=** key (rebindable) | The same pin action, from the keyboard |
 | Left-click the name-tag button | Next display mode |
-| Shift + left-click it | Previous display mode |
-| Right-click it | Hide or show the bookmark list |
+| Right-click the name-tag button | Previous display mode |
+| Shift + left-click it | Hide or show the bookmark list |
+| Ctrl + left-click it | Toggle search-box auto-focus |
 
 A low-pitched click from **+** means nothing was pinned — the field was blank, or that
 address is already bookmarked.
