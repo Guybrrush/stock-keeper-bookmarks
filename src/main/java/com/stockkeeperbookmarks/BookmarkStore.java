@@ -1,12 +1,16 @@
 package com.stockkeeperbookmarks;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.gson.Gson;
@@ -25,6 +29,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.fml.loading.FMLPaths;
 
 /**
@@ -43,6 +48,9 @@ public final class BookmarkStore {
 	private static final Logger LOGGER = LogUtils.getLogger();
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final int VERSION = 1;
+
+	/** Suffix the client itself appends; the same server typed without it is the same server. */
+	private static final String DEFAULT_PORT = ":25565";
 
 	private static Map<String, List<String>> entries;
 	/** Set when the file on disk is newer than this build understands; blocks all writes. */
@@ -76,13 +84,44 @@ public final class BookmarkStore {
 
 		ServerData server = minecraft.getCurrentServer();
 		if (server != null && server.ip != null && !server.ip.isBlank())
-			return "server/" + server.ip;
+			return "server/" + normalizeAddress(server.ip);
 
 		MinecraftServer singleplayer = minecraft.getSingleplayerServer();
 		if (singleplayer != null)
-			return "local/" + singleplayer.getWorldData().getLevelName();
+			return "local/" + saveFolder(singleplayer);
 
 		return "unknown";
+	}
+
+	/**
+	 * The save's directory name, which is unique.
+	 *
+	 * Deliberately not {@code getWorldData().getLevelName()}: that is the *display* name, and
+	 * Minecraft disambiguates the folder rather than the name. Two saves both created as
+	 * "New World" sit in "New World" and "New World (1)" while both reporting "New World", so
+	 * keying by name silently merged their bookmark lists.
+	 */
+	private static String saveFolder(MinecraftServer singleplayer) {
+		try {
+			Path folder = singleplayer.getWorldPath(LevelResource.ROOT).normalize().getFileName();
+			if (folder != null && !folder.toString().isBlank())
+				return folder.toString();
+		} catch (Exception e) {
+			LOGGER.warn("Could not resolve the save folder; falling back to the world name", e);
+		}
+		return singleplayer.getWorldData().getLevelName();
+	}
+
+	/**
+	 * One server reached two ways should be one scope. Case and an explicit default port are
+	 * the variations the client itself produces; a host entered once by name and once by raw
+	 * IP is not something this can reconcile.
+	 */
+	private static String normalizeAddress(String ip) {
+		String address = ip.trim().toLowerCase(Locale.ROOT);
+		return address.endsWith(DEFAULT_PORT)
+			? address.substring(0, address.length() - DEFAULT_PORT.length())
+			: address;
 	}
 
 	public static List<String> get(String key) {
@@ -156,11 +195,30 @@ public final class BookmarkStore {
 				entries.put(keeper.getKey(), addresses);
 			}
 		} catch (Exception e) {
-			// A malformed file must not take the GUI down with it; start empty instead.
+			// A malformed file must not take the GUI down with it; start empty instead. Set the
+			// unreadable file aside first — otherwise the next pin writes an empty list straight
+			// over whatever was still recoverable in it.
 			LOGGER.error("Could not read {}, starting with no saved bookmarks", path, e);
+			quarantine(path);
 		}
 	}
 
+	/** Move an unreadable file out of the way so the next save cannot overwrite it. */
+	private static void quarantine(Path path) {
+		Path broken = path.resolveSibling(path.getFileName().toString() + ".corrupt");
+		try {
+			Files.move(path, broken, StandardCopyOption.REPLACE_EXISTING);
+			LOGGER.error("Kept the unreadable file at {}", broken);
+		} catch (Exception e) {
+			LOGGER.warn("Could not set {} aside", path, e);
+		}
+	}
+
+	/**
+	 * Write to a temporary file and swap it in, so an interrupted write cannot leave a
+	 * half-written file behind. {@link #load()} reads an unparseable file as "no bookmarks",
+	 * so a torn write here would otherwise come back as a clean slate on the next launch.
+	 */
 	private static void save() {
 		if (readOnly)
 			return;
@@ -177,10 +235,32 @@ public final class BookmarkStore {
 		root.add("keepers", keepers);
 
 		Path path = file();
-		try (Writer writer = Files.newBufferedWriter(path)) {
-			GSON.toJson(root, writer);
+		Path temp = path.resolveSibling(path.getFileName().toString() + ".tmp");
+		try {
+			try (Writer writer = Files.newBufferedWriter(temp)) {
+				GSON.toJson(root, writer);
+			}
+			replace(temp, path);
 		} catch (Exception e) {
 			LOGGER.error("Could not write {}", path, e);
+			discard(temp);
+		}
+	}
+
+	/** Atomic where the filesystem offers it; a plain replace is still better than nothing. */
+	private static void replace(Path temp, Path path) throws IOException {
+		try {
+			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+		} catch (AtomicMoveNotSupportedException e) {
+			Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+
+	private static void discard(Path temp) {
+		try {
+			Files.deleteIfExists(temp);
+		} catch (Exception e) {
+			LOGGER.warn("Could not clean up {}", temp, e);
 		}
 	}
 }
