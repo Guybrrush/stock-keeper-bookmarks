@@ -103,10 +103,14 @@ config's `defaultRequire: 1` they would take the whole game down on startup — 
 button that is purely cosmetic.
 
 Both constants have in fact held stable across every Create release from `6.0.0` to
-`6.0.10`, which is real evidence that patch releases do not disturb them. The guard is
-kept anyway because the declared range `[6.0.0,6.1.0)` also admits *future* 6.0.x
-builds, and the cost of being wrong is asymmetric: `require = 0` costs a missing
-button, `require = 1` costs a game that will not start.
+`6.0.10`, which is real evidence that patch releases do not move *these anchors*. It is
+not evidence that patch releases leave `renderBg` alone — on the 1.20.1 Create line they
+demonstrably do not. Between `6.0.7-169` and `6.0.8-291` there, the method was restructured
+outright: `ScreenWithStencils` and its stencil block were dropped. The anchors survived only
+because the change landed downstream of all of them. So the guard is kept, both because the
+declared range `[6.0.0,6.1.0)` admits *future* 6.0.x builds and because the next such
+refactor could just as easily land upstream instead. The cost of being wrong is asymmetric:
+`require = 0` costs a missing button, `require = 1` costs a game that will not start.
 
 Making them optional is not enough on its own, because two other injectors assume
 that artwork exists: the `+` hit box in `mouseClicked` would answer clicks for an
@@ -186,11 +190,14 @@ what makes it appear regularly**. Without the mod the field is usually pre-fille
 from `previouslyUsedAddress`, so vanilla rarely renders it at all.
 
 **The `@ModifyArg` slice must stay closed at both ends.** Create draws the Send
-caption twice (a plain branch and a faded just-sent branch) and then draws the
-"Request Sent" ribbon through the *same* `drawString` overload nine bytecode
-offsets later. An open-ended slice shifts that ribbon off-centre too. The slice
-runs from the `gui.stock_keeper.send` constant to the
-`gui.stock_keeper.request_sent` constant.
+caption twice — a plain branch and a faded just-sent branch — and then draws the
+"Request Sent" ribbon through the *same* `drawString` overload. In Create
+`6.0.10-280`'s `renderBg` the two caption calls sit at bytecode offsets `1196` and
+`1251`, the `gui.stock_keeper.request_sent` constant loads nine offsets after the
+second at `1260`, and the ribbon's own `drawString` follows at `1445`. Leave the
+slice open at the far end and it swallows `1445` as well, shifting the ribbon
+off-centre. Closing it on the `request_sent` constant stops at `1260` and catches
+exactly the two intended calls.
 
 ---
 
@@ -279,8 +286,11 @@ entirely when the label fits at 1.0.
 **Checked, and fine:**
 
 - `ModConfigSpec.ConfigValue#get()` **is cached** — a null-check over a cached
-  field after first read, not a re-parse (confirmed against NeoForge's source,
-  same finding as Foghorn's own performance pass). The per-frame
+  field after first read, not a re-parse. Read out of NeoForge `21.1.248`'s own
+  sources: `if (cachedValue == null) { cachedValue = getRaw(); } return cachedValue;`,
+  unconditionally. (The 1.20.1 branch reaches the same conclusion through Forge's
+  `ForgeConfigSpec`, which is this class before the rename — there the cache sits
+  behind a `USE_CACHES` flag, defaulting to `true`.) The per-frame
   `BUTTON_WIDTH.get()` calls were not a sink. They were hoisted into
   `buttonWidth` at init anyway, but for **correctness**, not speed: `columnX` is
   derived from that width, so re-reading it per frame could leave the two
@@ -361,5 +371,10 @@ entirely when the label fits at 1.0.
   **Worth repeating for any future injector**: `javap -p -cp <create.jar>` on the
   target class is the cheap way to prove a mandatory injection cannot fail to find
   its method, and it needs no game launch.
+
+  **None of this transfers to the 1.20.1 branch.** `create-1.20.1-*` is a separate
+  release line with an independent version history that happens to share the `6.0.x`
+  scheme, and its range is much narrower — `[6.0.7,6.1.0)`, with `6.0.0`–`6.0.6`
+  excluded for two distinct reasons. See that branch's own `DEVELOPMENT.md`.
 - **No automated tests.** Everything here is GUI geometry against a third-party
   mod's private layout; verification has been visual, in-game.
