@@ -1,8 +1,9 @@
 name: Build
 
+# Every branch here targets a different Minecraft version and loader, and each
+# carries its own JDK and Gradle version, so each one builds itself.
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
