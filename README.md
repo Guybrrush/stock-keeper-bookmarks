@@ -167,7 +167,8 @@ in-game on Create `6.0.7` and `6.0.8`.
 **Create 6.0.7 is the minimum**, and that floor was found by launching against each release
 in turn rather than assumed. `6.0.0`–`6.0.2` fail because the Stock Keeper's `addressBox`
 field was a plain `EditBox` until `6.0.3`, not the `AddressEditBox` this mod's mixin shadows.
-`6.0.3`–`6.0.6` fail differently, for a reason that is still unidentified — see
+`6.0.3`, `6.0.4` and `6.0.6` fail differently, for a reason that is still unidentified;
+`6.0.5` sits between two identical failures and was not launched separately — see
 [DEVELOPMENT.md](DEVELOPMENT.md) for what was ruled out. `mods.toml` declares
 `[6.0.7,6.1.0)` so those versions refuse to load rather than crashing.
 
