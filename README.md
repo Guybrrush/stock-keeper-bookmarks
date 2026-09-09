@@ -9,10 +9,16 @@ loader APIs are mutually exclusive and cannot be merged into a single source tre
 
 ## Branches
 
-| Branch | Minecraft | Loader | Requires |
-| --- | --- | --- | --- |
-| [`1.21.1-neoforge`](../../tree/1.21.1-neoforge) | 1.21.1 | NeoForge | Create `6.0.0`–`6.0.x`, Java 21 |
-| [`1.20.1-forge`](../../tree/1.20.1-forge) | 1.20.1 | Forge **and** NeoForge | Create `6.0.7`+, Java 17 |
+| Branch | Minecraft | Loader | Create | Java |
+| --- | --- | --- | --- | --- |
+| [`1.21.1-neoforge`](../../tree/1.21.1-neoforge) | 1.21.1 | NeoForge | `[6.0.0,6.1.0)` | 21 |
+| [`1.20.1-forge`](../../tree/1.20.1-forge) | 1.20.1 | Forge **and** NeoForge | `[6.0.7,6.1.0)` | 17 |
+
+Those are the ranges the branches' mod metadata actually declares: every `6.0.x` at or above
+the floor, and nothing in `6.1`. The 1.20.1 floor is higher for a reason rather than caution —
+Create `6.0.0`–`6.0.6` on that line fail to load, in two distinct ways, and the branch's
+`DEVELOPMENT.md` breaks down which versions fail how. The two Create lines share the `6.0.x`
+scheme but are separate releases, so the version numbers are not comparable between rows.
 
 The 1.20.1 build runs on both loaders from one jar: NeoForge's 1.20.1 line is a compatibility
 backport that keeps Forge's `net.minecraftforge` namespace and registers itself as `forge`, so a
@@ -40,9 +46,12 @@ label layout, display modes, or user-facing strings cherry-picks cleanly:
 DisplayMode.java · AddressButton.java · FooterPatch.java · en_us.json · icon.png
 ```
 
-`BookmarkStore.java` differs by a single import line, so bookmark storage fixes usually
-cherry-pick too. The mixin, the config classes and the mod entrypoint are where the loaders
-genuinely part ways, and fixes there have to be written twice.
+Two more differ only in imports — `BookmarkStore.java` by a single line, `ModKeys.java` by its
+import block plus the shape of one annotation — so fixes there cherry-pick with a small fixup.
+The mixin, the config class and the mod entrypoint are where the loaders genuinely part ways,
+and fixes there have to be written twice. The metadata differs by construction: `mods.toml`
+against `neoforge.mods.toml`, a different `mixins.json`, and a `pack.mcmeta` that only the
+1.20.1 build needs.
 
 Each branch's own `README.md` documents that version's features and controls, and its
 `DEVELOPMENT.md` covers mixin injection points and the compatibility testing behind its
