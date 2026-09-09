@@ -332,6 +332,24 @@ entirely when the label fits at 1.0.
 
 ## Known gaps
 
+- **This branch's Create range is its own, separate finding.** The bullet below
+  this one is about `create-1.21.1-*` and does not apply here — 1.20.1's Create
+  builds are a distinct release line with an independent version history, even
+  though both happen to use a `6.0.x` scheme. On Forge 1.20.1:
+
+  | Range | Result |
+  | --- | --- |
+  | `6.0.0` – `6.0.2` | Fails. `addressBox` is a plain `EditBox` until `6.0.3`, not the `AddressEditBox` type this mixin shadows — caught cleanly by Mixin's own `@Shadow` check. |
+  | `6.0.3`, `6.0.4`, `6.0.6` | Fails differently: `NoClassDefFoundError: ... is invalid` at mixin-apply time, same signature every time. The underlying ASM error is not identified — Mixin does not surface it past that message in any log this build produces, and `renderBg`'s bytecode was diffed instruction-for-instruction between `6.0.2` and `6.0.3` and found structurally identical aside from the known field change, which rules out the two CONSTANT-anchored injectors as the cause. Getting the real cause would need Mixin's own verbose debug flags (`-Dmixin.debug.verify=true`) at launch, which needs a per-instance JVM argument override outside what this build can set on its own. |
+  | `6.0.5` | Not directly tested. Bracketed between two failures with the identical signature on both sides (`6.0.4`, `6.0.6`), so almost certainly fails the same way — but that is an inference, not a result. |
+  | `6.0.7`, `6.0.8` | Works. Confirmed in-game: sidebar, name-tag button, bookmarks, pin, Send, and tooltips all render and respond correctly. |
+
+  `versionRange` is `[6.0.7,6.1.0)` accordingly. As with the 1.21.1 range below,
+  what this cannot cover is *future* 6.0.x patch releases — re-check with `javap`
+  (for the mixin targets) and, ideally, an actual launch (for whatever broke
+  `6.0.3`–`6.0.6`, since that one has no known static signature to check for)
+  before trusting a new Create 1.20.1 build against this branch.
+
 - **The declared Create range is now verified across every released 6.0.x.**
   The constants in the table above were read from `6.0.10-280`, but the mod has
   since been run against each Create release from `6.0.0` to `6.0.10` with no

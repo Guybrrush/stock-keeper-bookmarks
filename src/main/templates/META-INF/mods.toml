@@ -37,6 +37,9 @@ Client-side only — should work on any Minecraft 1.20.1 server running Create.
 [[dependencies.${mod_id}]]
     modId="create"
     mandatory=true
-    versionRange="[6.0.0,6.1.0)"
+    # 6.0.0-6.0.6 crash on this loader: the Stock Keeper screen's addressBox field only
+    # became the AddressEditBox type this mixin expects in 6.0.3, and 6.0.3-6.0.6 fail
+    # for a separate, unresolved reason. Bisected empirically; see DEVELOPMENT.md.
+    versionRange="[6.0.7,6.1.0)"
     ordering="AFTER"
     side="CLIENT"
