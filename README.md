@@ -4,6 +4,10 @@ Client-side Create addon for Minecraft 1.21.1 / NeoForge. Replaces the Stock Kee
 single sticky address prompt with a column of one-click destination bookmarks, saved
 per Stock Keeper.
 
+> **This is the 1.21.1 branch.** For Minecraft 1.20.1 (Forge and NeoForge) see
+> [`1.20.1-forge`](../../tree/1.20.1-forge); [`main`](../../tree/main) indexes every
+> supported version.
+
 ## The problem
 
 Create's Stock Keeper has one free-text "Package Address" field. Two things make it
@@ -161,13 +165,22 @@ Working in-game against Create `6.0.10-280`, Minecraft 1.21.1, NeoForge 21.1.248
 run against every Create release from `6.0.0` to `6.0.10` without layout problems.
 
 The jar is a **NeoForge** build, and should work in any NeoForge 1.21.1 setup that has
-Create. There is no Fabric or Forge build — the `-neoforge` in the filename is there to make
-that obvious before you download it, not to imply siblings exist.
+Create. There is no Forge build for 1.21.1 — Create itself ships only for NeoForge on this
+version — and no Fabric build at all. The `-neoforge` in the filename says which loader this
+jar is for before you download it.
+
+A **1.20.1 build does exist**, on [`1.20.1-forge`](../../tree/1.20.1-forge), and that one runs
+on Forge and NeoForge alike from a single jar. That is possible only on 1.20.1, where
+NeoForge is a compatibility backport still using Forge's namespace; from 1.20.2 onward the
+two diverge, which is why these are separate branches rather than one codebase.
 
 Also played on a multiplayer server that does **not** have it installed, which is the case
 the client-side claim rests on. That is one server though, not a guarantee: a conflicting
 mod or an unusual setup could still break it, which is why the mod description says
 *should* work rather than *works*.
+
+Note this branch builds on **JDK 21**, where the 1.20.1 branch needs 17 — its ForgeGradle 6
+toolchain cannot run on 21. Switching branches means switching JDK.
 
 ```
 ./gradlew build      # jar in build/libs/
