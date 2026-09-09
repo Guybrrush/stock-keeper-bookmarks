@@ -21,7 +21,8 @@ fully from 1.20.2 onward, which is why 1.21.1 needs a separate branch and a diff
 
 ## Downloads
 
-CurseForge: **<!-- TODO: project URL -->**
+**[CurseForge](https://www.curseforge.com/minecraft/mc-mods/create-stock-keeper-bookmarks)** —
+both the 1.21.1 and 1.20.1 builds are published there.
 
 ## Why the branches never merge
 
