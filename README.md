@@ -1,8 +1,12 @@
 # Create: Stock Keeper Bookmarks
 
-Client-side Create addon for Minecraft 1.21.1 / NeoForge. Replaces the Stock Keeper's
+Client-side Create addon for Minecraft 1.20.1 / Forge. Replaces the Stock Keeper's
 single sticky address prompt with a column of one-click destination bookmarks, saved
 per Stock Keeper.
+
+> **This is the 1.20.1 branch.** For Minecraft 1.21.1 see
+> [`1.21.1-neoforge`](../../tree/1.21.1-neoforge); [`main`](../../tree/main) indexes every
+> supported version.
 
 ## The problem
 
@@ -157,17 +161,29 @@ your addresses near the Stock Ticker and the field will suggest them.
 
 ## Status
 
-Working in-game against Create `6.0.10-280`, Minecraft 1.21.1, NeoForge 21.1.248, and
-run against every Create release from `6.0.0` to `6.0.10` without layout problems.
+Built against Create `6.0.8-291`, Minecraft 1.20.1, Forge 47.4.23, and confirmed working
+in-game on Create `6.0.7` and `6.0.8`.
 
-The jar is a **NeoForge** build, and should work in any NeoForge 1.21.1 setup that has
-Create. There is no Fabric or Forge build — the `-neoforge` in the filename is there to make
-that obvious before you download it, not to imply siblings exist.
+**Create 6.0.7 is the minimum**, and that floor was found by launching against each release
+in turn rather than assumed. `6.0.0`–`6.0.2` fail because the Stock Keeper's `addressBox`
+field was a plain `EditBox` until `6.0.3`, not the `AddressEditBox` this mod's mixin shadows.
+`6.0.3`–`6.0.6` fail differently, for a reason that is still unidentified — see
+[DEVELOPMENT.md](DEVELOPMENT.md) for what was ruled out. `mods.toml` declares
+`[6.0.7,6.1.0)` so those versions refuse to load rather than crashing.
+
+The jar runs on **Forge and NeoForge alike** on 1.20.1, from the same file. NeoForge's 1.20.1
+line is a compatibility backport that keeps Forge's `net.minecraftforge` namespace and
+registers itself under the mod id `forge`, so a Forge-targeted jar loads unmodified on either
+— confirmed by testing both. That is specific to 1.20.1; NeoForge diverged fully from 1.20.2
+onward, which is why 1.21.1 is a separate branch entirely.
 
 Also played on a multiplayer server that does **not** have it installed, which is the case
 the client-side claim rests on. That is one server though, not a guarantee: a conflicting
 mod or an unusual setup could still break it, which is why the mod description says
 *should* work rather than *works*.
+
+Note this branch builds on **JDK 17**, not the 21 the 1.21.1 branch needs — ForgeGradle 6
+requires Gradle 8.1.1, which cannot parse Java 21 class files.
 
 ```
 ./gradlew build      # jar in build/libs/
