@@ -113,7 +113,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	// offsets address either state. We repaint that whole 80px span as:
 	//     [ 20px + button ][ 4px gap ][ 56px Send ]
 	@Unique private static final ResourceLocation STOCKKEEPERBOOKMARKS$SHEET =
-		ResourceLocation.fromNamespaceAndPath("create", "textures/gui/stock_keeper.png");
+		new ResourceLocation("create", "textures/gui/stock_keeper.png");
 
 	@Unique private static final int STOCKKEEPERBOOKMARKS$BASE_U = 160, STOCKKEEPERBOOKMARKS$BASE_V = 119;
 	@Unique private static final int STOCKKEEPERBOOKMARKS$HOVER_U = 55, STOCKKEEPERBOOKMARKS$HOVER_V = 200;
@@ -139,11 +139,11 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	@Unique private static final int STOCKKEEPERBOOKMARKS$LABEL_SHIFT =
 		(STOCKKEEPERBOOKMARKS$PLUS_W + STOCKKEEPERBOOKMARKS$GAP_W) / 2;
 
-	@Shadow public EditBox searchBox;
-	@Shadow public AddressEditBox addressBox;
-	@Shadow int windowHeight;
+	@Shadow(remap = false) public EditBox searchBox;
+	@Shadow(remap = false) public AddressEditBox addressBox;
+	@Shadow(remap = false) int windowHeight;
 	/** Top of Create's item grid — {@code getHoveredSlot} rows off this, so row 0 starts here. */
-	@Shadow int itemsY;
+	@Shadow(remap = false) int itemsY;
 
 	/**
 	 * Create places its first slot row at {@code itemsY + 4}, or {@code itemsY + 20} when
@@ -153,7 +153,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 */
 	@Unique private static final int STOCKKEEPERBOOKMARKS$GRID_TOP_PADDING = 4;
 
-	@Shadow
+	@Shadow(remap = false)
 	private void sendIt() {
 		throw new AssertionError("mixin stub");
 	}
@@ -493,7 +493,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * repainted. Without that check a dropped artwork injection would leave Send drawn full width
 	 * while answering clicks on only part of it.
 	 */
-	@Inject(method = "isConfirmHovered", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "isConfirmHovered", at = @At("HEAD"), cancellable = true, remap = false)
 	private void stockkeeperbookmarks$narrowConfirm(int mouseX, int mouseY, CallbackInfoReturnable<Boolean> cir) {
 		if (!FooterPatch.isApplied())
 			return;
@@ -668,13 +668,18 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 		}
 	}
 
+	/**
+	 * One scroll delta here, not two. 1.20.1 predates horizontal scrolling, so the signature is
+	 * {@code (double, double, double)} rather than 1.21's {@code (double, double, double, double)}
+	 * — an injection carrying the extra parameter would simply fail to bind.
+	 */
 	@Inject(method = "mouseScrolled", at = @At("HEAD"), cancellable = true)
-	private void stockkeeperbookmarks$scrollColumn(double mouseX, double mouseY, double scrollX,
-		double scrollY, CallbackInfoReturnable<Boolean> cir) {
+	private void stockkeeperbookmarks$scrollColumn(double mouseX, double mouseY, double delta,
+		CallbackInfoReturnable<Boolean> cir) {
 		if (stockkeeperbookmarks$maxScroll() <= 0 || !stockkeeperbookmarks$inViewport(mouseX, mouseY))
 			return;
 		stockkeeperbookmarks$scrollTo(
-			stockkeeperbookmarks$scroll - (int) Math.signum(scrollY) * stockkeeperbookmarks$pitch());
+			stockkeeperbookmarks$scroll - (int) Math.signum(delta) * stockkeeperbookmarks$pitch());
 		cir.setReturnValue(true);
 	}
 
@@ -711,7 +716,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	 * Note that the inject position is *not* what keeps tooltips from being clipped — the
 	 * explicit flush below is. See the scissor comment there before moving anything.
 	 */
-	@Inject(method = "renderForeground", at = @At("HEAD"))
+	@Inject(method = "renderForeground", at = @At("HEAD"), remap = false)
 	private void stockkeeperbookmarks$drawColumn(GuiGraphics graphics, int mouseX, int mouseY,
 		float partialTick, CallbackInfo ci) {
 
@@ -887,7 +892,7 @@ public abstract class StockKeeperRequestScreenMixin extends AbstractContainerScr
 	}
 
 	/** Keep JEI/EMI from drawing on top of the destination column. */
-	@Inject(method = "getExtraAreas", at = @At("RETURN"), cancellable = true)
+	@Inject(method = "getExtraAreas", at = @At("RETURN"), cancellable = true, remap = false)
 	private void stockkeeperbookmarks$reserveColumn(CallbackInfoReturnable<List<Rect2i>> cir) {
 		if (stockkeeperbookmarks$reservedArea == null)
 			return;

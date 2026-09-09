@@ -16,29 +16,27 @@ Replaces the Stock Keeper's single sticky address prompt with a column of
 one-click destination buttons. The address field no longer inherits whatever
 was typed last, so a stray keystroke can't ship your order to the crusher.
 
-Client-side only — should work on any Minecraft 1.21.1 server running Create.
+Client-side only — should work on any Minecraft 1.20.1 server running Create.
 '''
 
-[[mixins]]
-config="${mod_id}.mixins.json"
-
+# Forge spells this "mandatory" where NeoForge uses type="required".
 [[dependencies.${mod_id}]]
-    modId="neoforge"
-    type="required"
-    versionRange="${neo_version_range}"
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
     modId="minecraft"
-    type="required"
+    mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
     modId="create"
-    type="required"
+    mandatory=true
     versionRange="[6.0.0,6.1.0)"
     ordering="AFTER"
     side="CLIENT"

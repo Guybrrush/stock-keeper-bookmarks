@@ -2,7 +2,8 @@
   "required": true,
   "minVersion": "0.8.5",
   "package": "com.stockkeeperbookmarks.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "stockkeeperbookmarks.refmap.json",
   "injectors": {
     "defaultRequire": 1
   },

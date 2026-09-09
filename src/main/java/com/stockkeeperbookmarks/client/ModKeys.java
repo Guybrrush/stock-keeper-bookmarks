@@ -23,10 +23,10 @@ import com.stockkeeperbookmarks.StockKeeperBookmarks;
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.KeyMapping;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 
 /**
  * The pin action, reachable from the keyboard as well as from the footer button.
@@ -37,7 +37,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
  * a bookmark — a fresh keeper starts empty — so it needs a route that does not depend on Create's
  * internal layout at all. This is that route.
  */
-@EventBusSubscriber(modid = StockKeeperBookmarks.ID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = StockKeeperBookmarks.ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ModKeys {
 
 	public static final String CATEGORY = "key.categories.stockkeeperbookmarks";

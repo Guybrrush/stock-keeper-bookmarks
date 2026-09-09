@@ -20,22 +20,22 @@ package com.stockkeeperbookmarks;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 public class AddressBookConfig {
 
-	public static final ModConfigSpec SPEC;
+	public static final ForgeConfigSpec SPEC;
 
-	public static final ModConfigSpec.ConfigValue<List<? extends String>> ADDRESSES;
-	public static final ModConfigSpec.BooleanValue CLICK_TO_SEND;
-	public static final ModConfigSpec.BooleanValue CLEAR_ADDRESS_ON_OPEN;
-	public static final ModConfigSpec.IntValue BUTTON_WIDTH;
-	public static final ModConfigSpec.EnumValue<DisplayMode> DISPLAY_MODE;
-	public static final ModConfigSpec.BooleanValue COLLAPSED;
-	public static final ModConfigSpec.BooleanValue AUTO_FOCUS_SEARCH;
+	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ADDRESSES;
+	public static final ForgeConfigSpec.BooleanValue CLICK_TO_SEND;
+	public static final ForgeConfigSpec.BooleanValue CLEAR_ADDRESS_ON_OPEN;
+	public static final ForgeConfigSpec.IntValue BUTTON_WIDTH;
+	public static final ForgeConfigSpec.EnumValue<DisplayMode> DISPLAY_MODE;
+	public static final ForgeConfigSpec.BooleanValue COLLAPSED;
+	public static final ForgeConfigSpec.BooleanValue AUTO_FOCUS_SEARCH;
 
 	static {
-		ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 
 		builder.comment("Create: Stock Address Book — client settings").push("addressBook");
 
@@ -47,9 +47,11 @@ public class AddressBookConfig {
 				"then on that keeper is edited there, not here.",
 				"Editable in-game: type an address in the field and click the + button to pin it,",
 				"right-click a button to remove it, drag buttons to reorder them.")
+			// Three arguments here, not four. Forge's defineListAllowEmpty takes no
+			// new-element supplier — that parameter is a NeoForge addition, and the template
+			// value it wanted has no equivalent on this line.
 			.defineListAllowEmpty("addresses",
-				new ArrayList<>(),
-				() -> "workshop",
+				new ArrayList<String>(),
 				o -> o instanceof String s && !s.isBlank());
 
 		CLICK_TO_SEND = builder

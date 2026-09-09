@@ -1,7 +1,13 @@
 plugins {
     id 'java-library'
-    id 'net.neoforged.moddev' version '2.0.143'
+    id 'eclipse'
     id 'idea'
+    // 1.20.1 is ForgeGradle territory; the NeoForge moddev plugin does not target it.
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+    // Generates the refmap. Mandatory here and not on the 1.21.1 branch: Forge 1.20.1 ships
+    // vanilla methods under SRG names, so mixin targets written in readable names have to be
+    // translated at build time or nothing will bind at runtime.
+    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
 version = mod_version
@@ -12,60 +18,71 @@ base {
     archivesName = "${archives_name}-${minecraft_version}"
 }
 
-repositories {
-    // Create and its dependencies
-    maven { url = "https://maven.createmod.net" }
-    maven { url = "https://maven.ithundxr.dev/snapshots" }
-}
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+minecraft {
+    // Official Mojang mappings rather than Parchment: fewer moving parts on a port, and
+    // parameter names are the only thing given up.
+    mappings channel: 'official', version: minecraft_version
 
-neoForge {
-    version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
+    copyIdeResources = true
 
     runs {
         client {
-            client()
-        }
-
-        configureEach {
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
-    }
-
-    mods {
-        "${mod_id}" {
-            sourceSet(sourceSets.main)
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', ''
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
 
-configurations {
-    runtimeClasspath.extendsFrom localRuntime
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
+}
+
+repositories {
+    // Create and its dependencies
+    maven { url = "https://maven.createmod.net" }
+    maven { url = "https://maven.tterrag.com" }
+    maven { url = "https://maven.ithundxr.dev/snapshots" }
 }
 
 dependencies {
-    // Create is compiled against, and required at runtime.
-    implementation("com.simibubi.create:create-1.21.1:${create_version}:slim") { transitive = false }
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    // Create's own hard dependencies, needed so the dev client actually boots.
-    implementation("net.createmod.ponder:ponder-neoforge:${ponder_version}")
-    implementation("com.tterrag.registrate:Registrate:${registrate_version}")
-    compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-1.21.1:${flywheel_version}")
-    runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-1.21.1:${flywheel_version}")
+    // Create is compiled against, and required at runtime. fg.deobf remaps these published
+    // jars from SRG to the mapping this project compiles with.
+    implementation fg.deobf("com.simibubi.create:create-1.20.1:${create_version}:slim") { transitive = false }
+
+    // Create's own hard dependencies. Catnip is separate on this line, unlike on 1.21.1.
+    //
+    // All transitive = false. Flywheel's published POM depends on the group
+    // dev.engine_room.flywheel (underscore) rather than the dev.engine-room.flywheel (hyphen)
+    // it is published under, at a version present in no repo declared here. Left transitive,
+    // that single unresolvable coordinate aborts the whole deobf repo and every other Create
+    // dependency then reports "not found" as a downstream symptom. Nothing here is shipped
+    // anyway — these are compile-time only, and Create supplies them at runtime.
+    implementation fg.deobf("net.createmod.ponder:Ponder-Forge-1.20.1:${ponder_version}") { transitive = false }
+    implementation fg.deobf("net.createmod.catnip:Catnip-Forge-1.20.1:${catnip_version}") { transitive = false }
+    implementation fg.deobf("com.tterrag.registrate:Registrate:${registrate_version}") { transitive = false }
+    compileOnly fg.deobf("dev.engine-room.flywheel:flywheel-forge-api-1.20.1:${flywheel_version}") { transitive = false }
+    runtimeOnly fg.deobf("dev.engine-room.flywheel:flywheel-forge-1.20.1:${flywheel_version}") { transitive = false }
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            neo_version_range      : neo_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -81,10 +98,23 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
     into "build/generated/sources/modMetadata"
 }
 sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_authors,
+                'MixinConfigs'            : "${mod_id}.mixins.json"
+        ])
+    }
 }
 
 idea {
