@@ -7,6 +7,11 @@ the conversation that produced it.
 Verified against **Create `6.0.10-280`**, Minecraft **1.21.1**, NeoForge
 **21.1.248**. Client-side only.
 
+> **These notes describe the 1.21.1 / NeoForge branch.** The 1.20.1 / Forge port lives on
+> [`1.20.1-forge`](../../tree/1.20.1-forge) and has its own `DEVELOPMENT.md`; the two branches
+> never merge, and several things below — the mapping situation, the toolchain, the JDK, the
+> supported Create range — differ between them. `main` indexes both.
+
 ---
 
 ## Overview
@@ -35,11 +40,15 @@ anything but `StockKeeperRequestScreen`.
 - Create is pulled from the Modrinth maven as the **`slim`** classifier with
   `transitive = false`; its own hard deps (Ponder, Registrate, Flywheel) are
   declared separately so the dev client actually boots.
+- **Builds on JDK 21**, via ModDevGradle on Gradle 9. The 1.20.1 branch needs JDK **17** and
+  Gradle 8.1.1 instead, so switching branches means switching JDK.
 - **No refmap.** NeoForge 1.21.1 runs Mojang official mappings in production,
   the same as in dev, so mixin targets are written against those names directly.
+  This is the single biggest difference from the 1.20.1 branch, where Forge ships vanilla
+  methods under SRG names and every mixin target has to be translated at build time.
 - `neoforge.mods.toml` is **generated** from `src/main/templates/META-INF/` by
   the `generateModMetadata` task — edit the template, not `build/`.
-- Local testing is a copy of `build/libs/stockkeeperbookmarks-<version>.jar` into a
+- Local testing is a copy of `build/libs/stock-keeper-bookmarks-neoforge-1.21.1-<version>.jar` into a
   Modrinth App instance's `mods` folder. **Verify the copy landed**: if the game
   is running, Windows refuses the overwrite and `cp` still reports success, so
   compare hashes rather than trusting the exit code.
