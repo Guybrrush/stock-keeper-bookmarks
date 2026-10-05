@@ -1,64 +1,67 @@
 # Create: Stock Keeper Bookmarks
 
-A client-side [Create](https://modrinth.com/mod/create) addon that replaces the Stock Keeper's
-single sticky address prompt with a column of one-click destination bookmarks — so a forgotten
-address can't quietly ship your order to the crusher.
+A client-side [Create](https://www.curseforge.com/minecraft/mc-mods/create) addon.
 
-**This branch holds no code.** Each supported Minecraft version is its own branch, because the
-loader APIs are mutually exclusive and cannot be merged into a single source tree.
+Create's Stock Keeper has a single "Package Address" field, and it keeps whatever was typed
+into it last. On a server that includes what somebody else typed. Nothing checks the address
+before the order ships, so a stale one sends your package to the wrong machine or to nowhere
+at all.
 
-## Branches
+This mod puts a column of saved destinations next to the panel. You click the one you want,
+and the text field starts empty every time the screen opens.
 
-| Branch | Minecraft | Loader | Create | Java |
-| --- | --- | --- | --- | --- |
-| [`1.21.1-neoforge`](../../tree/1.21.1-neoforge) | 1.21.1 | NeoForge | `[6.0.0,6.1.0)` | 21 |
-| [`1.20.1-forge`](../../tree/1.20.1-forge) | 1.20.1 | Forge **and** NeoForge | `[6.0.7,6.1.0)` | 17 |
+## Download
 
-Those are the ranges the branches' mod metadata actually declares: every `6.0.x` at or above
-the floor, and nothing in `6.1`. The 1.20.1 floor is higher for a reason rather than caution —
-Create `6.0.0`–`6.0.6` on that line fail to load, in two distinct ways, and the branch's
-`DEVELOPMENT.md` breaks down which versions fail how. The two Create lines share the `6.0.x`
-scheme but are separate releases, so the version numbers are not comparable between rows.
+**[CurseForge](https://www.curseforge.com/minecraft/mc-mods/create-stock-keeper-bookmarks)**
 
-The 1.20.1 build runs on both loaders from one jar: NeoForge's 1.20.1 line is a compatibility
-backport that keeps Forge's `net.minecraftforge` namespace and registers itself as `forge`, so a
-Forge-targeted jar loads unmodified on either. That is specific to 1.20.1 — NeoForge diverged
-fully from 1.20.2 onward, which is why 1.21.1 needs a separate branch and a different toolchain.
+| Minecraft | Loader | Create |
+| --- | --- | --- |
+| 1.21.1 | NeoForge | 6.0.x |
+| 1.20.1 | Forge or NeoForge | 6.0.7+ |
 
-## Downloads
+The 1.20.1 jar runs on Forge and NeoForge both, from the same file. Install it like any other
+mod. Both builds are declared for Create 6.0 only, so a future Create 6.1 will need an update
+here first.
 
-**[CurseForge](https://www.curseforge.com/minecraft/mc-mods/create-stock-keeper-bookmarks)** —
-both the 1.21.1 and 1.20.1 builds are published there.
+Nothing goes on the server. It also works on servers that don't have it installed.
 
-## Why the branches never merge
+## What it does
 
-They differ at the import level — `net.minecraftforge` against `net.neoforged`,
-`ForgeConfigSpec` against `ModConfigSpec`, `new ResourceLocation(...)` against
-`ResourceLocation.fromNamespaceAndPath(...)`, `mouseScrolled` with three parameters against
-four. Each is an either/or, so a merged file would compile against neither loader. They also
-need different build toolchains: ForgeGradle 6 on Gradle 8.1.1 and JDK 17 for 1.20.1,
-ModDevGradle on Gradle 9 and JDK 21 for 1.21.1.
+- A column of bookmarks beside the Stock Keeper panel. One click picks that destination.
+- Every Stock Keeper keeps its own list. Your workshop keeper and your smelter keeper don't
+  share bookmarks, even on the same logistics network.
+- The address field is empty on every open. This is the actual fix; the bookmarks are what
+  make it painless.
+- Type an address and click **+** to save it. Right-click a bookmark to remove it, drag to
+  reorder. The list scrolls once it gets long.
+- A small name-tag button above the list cycles through label layouts, hides the list, and
+  toggles whether the item search box is focused when you open the screen.
+- The free-text field is still there. Glob and `regex:` addresses and one-off destinations
+  still need it.
+- Sending with the field blank still works. A small setup with one unaddressed destination
+  is a normal way to play, and the mod never blocks a send.
 
-Not everything diverges, though. These are byte-identical across both branches, so a fix to
-label layout, display modes, or user-facing strings cherry-picks cleanly:
+Full controls, keybinds and config options are in the README for your version:
+**[1.21.1](../../tree/1.21.1-neoforge)** · **[1.20.1](../../tree/1.20.1-forge)**
 
-```
-DisplayMode.java · AddressButton.java · FooterPatch.java · en_us.json · icon.png
-```
+## Source
 
-Two more differ only in imports — `BookmarkStore.java` by a single line, `ModKeys.java` by its
-import block plus the shape of one annotation — so fixes there cherry-pick with a small fixup.
-The mixin, the config class and the mod entrypoint are where the loaders genuinely part ways,
-and fixes there have to be written twice. The metadata differs by construction: `mods.toml`
-against `neoforge.mods.toml`, a different `mixins.json`, and a `pack.mcmeta` that only the
-1.20.1 build needs.
+This branch holds no code. Each Minecraft version is on its own branch, since the two loaders
+need different APIs and different build setups.
 
-Each branch's own `README.md` documents that version's features and controls, and its
-`DEVELOPMENT.md` covers mixin injection points and the compatibility testing behind its
-declared Create range.
+- [`1.21.1-neoforge`](../../tree/1.21.1-neoforge) — JDK 21
+- [`1.20.1-forge`](../../tree/1.20.1-forge) — JDK 17
+
+Either one builds with `./gradlew build`. Each has a `DEVELOPMENT.md` covering how the mod
+hooks into Create's screen and which Create versions were tested.
 
 ## License
 
-[LGPL-3.0-or-later](COPYING.LESSER) — see [`COPYING`](COPYING) for the GPL text it builds on.
-Forks and modified redistributions stay open under the same terms; mods that merely depend on
-this one are unaffected. If you want to do something the licence doesn't allow, ask.
+[LGPL-3.0-or-later](COPYING.LESSER), with the GPL text it builds on in [`COPYING`](COPYING).
+
+Use it, ship it in a modpack, fork it. If you distribute a modified version, that version stays
+open under the same licence. Mods that just depend on this one are unaffected. If you want to do
+something the licence doesn't allow, ask.
+
+Create itself is separately licensed. This mod ships none of Create's files; it reads the Stock
+Keeper's texture at runtime from the copy you already have installed.
