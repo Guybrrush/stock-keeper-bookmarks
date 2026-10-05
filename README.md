@@ -1,37 +1,26 @@
 # Create: Stock Keeper Bookmarks
 
-Client-side Create addon for Minecraft 1.20.1 / Forge. Replaces the Stock Keeper's
-single sticky address prompt with a column of one-click destination bookmarks, saved
-per Stock Keeper.
+Client-side Create addon for Minecraft 1.20.1 / Forge.
 
 > **This is the 1.20.1 branch.** For Minecraft 1.21.1 see
 > [`1.21.1-neoforge`](../../tree/1.21.1-neoforge); [`main`](../../tree/main) indexes every
 > supported version.
 
-Create's address field keeps whatever was typed into it last, which on a server includes
-what somebody else typed, and nothing checks the address before an order ships. This mod
-gives you saved destinations to click instead, and empties the field on every open.
+This mod puts a column of saved destinations next to the panel. You click the one you want,
+and the selected items are routed to the matching address.
 
-## What this does
+## What it does
 
-- **A column of destination bookmarks** to the left of the panel, flush against its
-  border. One click = one unambiguous destination.
-- **Bookmarks are per Stock Keeper.** The keeper in your workshop and the one at your
-  smelter keep separate lists, even on the same logistics network.
-- **The address field starts empty on every open.**
-- **Pin, remove, reorder in-game.** Type an address and click **+** to pin it,
-  right-click a bookmark to remove it, drag bookmarks to reorder them.
-- **The list scrolls** when it outgrows its viewport, with a scrollbar in the left
-  gutter. Dragging a bookmark against the top or bottom edge auto-scrolls, so you can
-  reorder across the boundary.
-- The free-text field is kept, for glob and `regex:` addresses and one-off destinations.
-- The column is registered via `getExtraAreas()` so JEI/EMI won't overlap it.
-
-Sending with an empty address still works. A minimalistic storage setup has a single,
-unaddressed destination, so leaving the field blank is a normal way to use it.
-
-Worth knowing: Create already sources address autocomplete from **nearby Clipboards**. Put
-a clipboard listing your addresses near the Stock Ticker and the field will suggest them.
+- A column of bookmarks beside the Stock Keeper panel. One click picks that destination.
+- Every Stock Keeper keeps its own list. Your workshop keeper and your smelter keeper don't
+  share bookmarks, even on the same logistics network.
+- The address field is empty on every open.
+- Type an address and click **+** to save it. Right-click a bookmark to remove it, drag to
+  reorder. The list scrolls once it gets long.
+- A small name-tag button above the list cycles through label layouts, hides the list, and
+  toggles whether the item search box is focused when you open the screen.
+- Sending with the field blank still works. A small setup with one unaddressed destination
+  is a normal way to play, and the mod never blocks a send.
 
 ## Config
 
@@ -88,6 +77,9 @@ and showing it again restores the layout you were using.
 A low-pitched click from **+** means nothing was pinned: the field was blank, or that
 address is already bookmarked.
 
+Create already sources address autocomplete from **nearby Clipboards**. Put a clipboard
+listing your addresses near the Stock Ticker and the field will suggest them.
+
 The pin key is an ordinary keybind, listed under Options → Controls. It reads **`=`** because
 that is the physical key you press to type `+`, and it pins whether or not Shift is held. It
 works while the address field has focus, so the bound character can't be typed into an
@@ -131,19 +123,8 @@ and what was deliberately left alone. It also covers the build setup; this branc
 
 ## License
 
-**LGPL-3.0-or-later**, in the form the licence is written to ship in: `COPYING` is the
-GPL-3.0 text, and `COPYING.LESSER` is the set of additional permissions that turn it into
-the LGPL.
+[LGPL-3.0-or-later](COPYING.LESSER), with the GPL text it builds on in [`COPYING`](COPYING).
 
-The short version: use it, ship it in a modpack, fork it, sell it if you want. If you
-distribute a *modified* version, that version has to stay open under the same licence with
-source available. Other mods that merely depend on this one are unaffected — that is
-exactly what LGPL relaxes compared to GPL.
-
-If you want to do something the licence does not allow, ask. As the copyright holder I can
-grant an exception.
-
-Create itself is separately licensed — MIT for its code, All Rights Reserved for its
-assets. This mod ships none of Create's files: it references
-`create:textures/gui/stock_keeper.png` at runtime, from the copy the player already has
-installed.
+Use it, ship it in a modpack, fork it. If you distribute a modified version, that version stays
+open under the same licence. Mods that just depend on this one are unaffected. If you want to do
+something the licence doesn't allow, ask.
