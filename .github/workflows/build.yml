@@ -14,12 +14,12 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
@@ -27,7 +27,7 @@ jobs:
       # Caches the Gradle dependency store between runs. Besides being faster, it
       # shrinks the window in which a flaky maven can fail the build at all.
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # maven.createmod.net has been seen dropping TLS handshakes against automated
       # builds. Retrying blindly would also paper over real compile errors, so this
@@ -55,7 +55,7 @@ jobs:
       # Lets a jar be downloaded from any run, and fails loudly if the build somehow
       # reported success without producing one.
       - name: Upload jar
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: stockkeeperbookmarks
           path: build/libs/*.jar
